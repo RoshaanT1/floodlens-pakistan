@@ -181,10 +181,12 @@ def check_table(con, table: str, decisions: dict) -> list[dict]:
             newest = pd.to_datetime(df[column]).max().date()
             if fetched - newest > max_lag:
                 rule = Rule(f"{table}_timely", table, pa.DataFrameSchema(), "flag",
-                            f"newest day {newest} is more than {max_lag.days} days before fetch {fetched}")
+                            f"newest day more than {max_lag.days} days before the latest fetch; "
+                            "dashboard shows the source as stale")
                 d = decide(decisions, rule)
                 log.append({"table_name": table, "rule": rule.name, "action": d["action"],
-                            "reason": rule.reason, "n_rows": 0, "decided_at_utc": d["decided_at_utc"]})
+                            "reason": f"{d['reason']} (newest {newest}, fetched {fetched})",
+                            "n_rows": 0, "decided_at_utc": d["decided_at_utc"]})
 
     # write back with the original column types (pandas turns DATE into a timestamp)
     casts = ", ".join(f'CAST("{c}" AS {t}) AS "{c}"' for c, t in types.items())
