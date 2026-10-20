@@ -26,3 +26,5 @@ logs/
 data/flow_status.json
 *.json.tmp
 *.building.duckdb
+.venv-insight/
+data/clean/ne_coastline/

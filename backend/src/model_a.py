@@ -275,8 +275,10 @@ def train(db_path=DB_PATH) -> dict:
               "positive_rate_train": float(tr["label"].mean()),
               "positive_rate_validation": float(val["label"].mean()), "baselines": {}, "models": {}}
 
+    preds = val[["row_id", "district_id", "date_utc", "lead_days", "label"]].copy()
     for name, p in baselines(val).items():
         report["baselines"][name] = score_by_lead(val, p)
+        preds[f"p_{name}"] = p
     clim24 = report["baselines"]["climatology"]["24h"]
     log_experiment("A2 baseline: district-by-month climatology", "-", f"val Brier 24h {fmt(clim24)}",
                    0, _peak_mb(), "baseline")
@@ -294,6 +296,7 @@ def train(db_path=DB_PATH) -> dict:
         p_val = crossfit_calibrated(model, used, val)
         secs = time.perf_counter() - t0
         scores = score_by_lead(val, p_val)
+        preds[f"p_{kind}"] = p_val
         report["models"][kind] = {"validation": scores, "train_seconds": secs}
         s24 = scores["24h"]
         kept = s24["brier"] < best_score
@@ -304,6 +307,8 @@ def train(db_path=DB_PATH) -> dict:
             best, best_score, previous = (kind, model), s24["brier"], f"{kind} {s24['brier']:.4f}"
 
     report["chosen"] = best[0] if best else None
+    with duckdb.connect(str(db_path)) as con:  # honest (cross-fitted) validation probabilities, for A5/A6/E2
+        con.execute("CREATE OR REPLACE TABLE validation_predictions_a AS SELECT * FROM preds ORDER BY row_id")
     report["beats_climatology_on_validation"] = best is not None
     if best:
         kind, model = best

@@ -5,7 +5,7 @@ builds before every fetcher exists; D8 makes every step mandatory.
 """
 import sys
 
-from src import attributes, districts, forecasts, imerg, labels, manifest, model_a, quality, rain
+from src import attributes, districts, documents, forecasts, imerg, labels, manifest, model_a, quality, rain, spi
 
 # (source the step needs, step, tables the quality agent checks after it)
 STEPS = [
@@ -13,6 +13,8 @@ STEPS = [
     (forecasts.SOURCE, forecasts.build, ["forecast_day"]),
     (forecasts.LIVE_SOURCE, forecasts.build_live, []),  # live view only; never a training input
     (attributes.UNOSAT_SOURCE, attributes.build, []),   # D7; needs all three attribute sources
+    ("ndma_sitrep", documents.build, []),               # R1 catalogue; citations only, never training
+    (spi.SOURCE, spi.build, []),                         # B2/B3: prices flagged, never filled
     (imerg.SOURCE, rain.build, ["rain_district_day"]),
     (imerg.SOURCE, labels.main, []),  # labels are built from quality-checked rain
     (imerg.SOURCE, model_a.features, []),

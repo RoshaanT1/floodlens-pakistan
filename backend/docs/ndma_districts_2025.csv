@@ -1,0 +1,161 @@
+district_id,name,province,n_sitreps_naming,n_sitreps_read
+PK617,Lahore,Punjab,86,86
+PK630,Rawalpindi,Punjab,86,86
+PK401,Islamabad,Islamabad,86,86
+PK110,Sudhnoti,Azad Kashmir,36,86
+PK533,Tank,Khyber Pakhtunkhwa,34,86
+PK105,Kotli,Azad Kashmir,25,86
+PK101,Bagh,Azad Kashmir,21,86
+PK633,Sheikhupura,Punjab,20,86
+PK532,Swat,Khyber Pakhtunkhwa,19,86
+PK305,Gilgit,Gilgit Baltistan,19,86
+PK505,Buner,Khyber Pakhtunkhwa,18,86
+PK109,Poonch,Azad Kashmir,18,86
+PK529,Shangla,Khyber Pakhtunkhwa,17,86
+PK304,Ghizer,Gilgit Baltistan,17,86
+PK522,Mansehra,Khyber Pakhtunkhwa,17,86
+PK613,Jhelum,Punjab,17,86
+PK501,Abbottabad,Khyber Pakhtunkhwa,15,86
+PK523,Mardan,Khyber Pakhtunkhwa,15,86
+PK310,Shigar,Gilgit Baltistan,13,86
+PK502,Bajaur,Khyber Pakhtunkhwa,13,86
+PK103,Jhelum Valley,Azad Kashmir,13,86
+PK726,Tharparkar,Sindh,13,86
+PK614,Kasur,Punjab,13,86
+PK535,Upper Dir,Khyber Pakhtunkhwa,12,86
+PK626,Okara,Punjab,12,86
+PK524,Mohmand,Khyber Pakhtunkhwa,11,86
+PK521,Malakand,Khyber Pakhtunkhwa,11,86
+PK306,Hunza,Gilgit Baltistan,11,86
+PK107,Muzaffarabad,Azad Kashmir,11,86
+PK213,Khuzdar,Balochistan,10,86
+PK106,Mirpur,Azad Kashmir,10,86
+PK104,Haveli,Azad Kashmir,10,86
+PK602,Bahawalnagar,Punjab,10,86
+PK307,Skardu,Gilgit Baltistan,10,86
+PK530,South Waziristan,Khyber Pakhtunkhwa,10,86
+PK301,Astore,Gilgit Baltistan,9,86
+PK526,Nowshera,Khyber Pakhtunkhwa,9,86
+PK525,North Waziristan,Khyber Pakhtunkhwa,9,86
+PK309,Kharmang,Gilgit Baltistan,9,86
+PK303,Ghanche,Gilgit Baltistan,9,86
+PK622,Multan,Punjab,9,86
+PK609,Gujranwala,Punjab,9,86
+PK625,Narowal,Punjab,9,86
+PK504,Batagram,Khyber Pakhtunkhwa,8,86
+PK620,Mandi Bahauddin,Punjab,8,86
+PK531,Swabi,Khyber Pakhtunkhwa,8,86
+PK606,Chiniot,Punjab,8,86
+PK634,Sialkot,Punjab,8,86
+PK520,Lower Dir,Khyber Pakhtunkhwa,7,86
+PK601,Attock,Punjab,7,86
+PK518,Kurram,Khyber Pakhtunkhwa,7,86
+PK608,Faisalabad,Punjab,7,86
+PK512,Karak,Khyber Pakhtunkhwa,6,86
+PK610,Gujrat,Punjab,6,86
+PK102,Bhimber,Azad Kashmir,6,86
+PK632,Sargodha,Punjab,6,86
+PK506,Charsadda,Khyber Pakhtunkhwa,6,86
+PK510,Hangu,Khyber Pakhtunkhwa,6,86
+PK701,Badin,Sindh,6,86
+PK621,Mianwali,Punjab,6,86
+PK627,Pakpattan,Punjab,5,86
+PK623,Muzaffargarh,Punjab,5,86
+PK513,Khyber,Khyber Pakhtunkhwa,5,86
+PK704,East Karachi,Sindh,5,86
+PK611,Hafizabad,Punjab,5,86
+PK308,Nagar,Gilgit Baltistan,5,86
+PK724,Tando Allahyar,Sindh,5,86
+PK706,Hyderabad,Sindh,5,86
+PK628,Rahim Yar Khan,Punjab,5,86
+PK206,Harnai,Balochistan,4,86
+PK108,Neelum,Azad Kashmir,4,86
+PK208,Jhal Magsi,Balochistan,4,86
+PK729,West Karachi,Sindh,4,86
+PK204,Dera Bugti,Balochistan,4,86
+PK216,Kohlu,Balochistan,4,86
+PK519,Lakki Marwat,Khyber Pakhtunkhwa,4,86
+PK707,Jacobabad,Sindh,4,86
+PK725,Tando Muhammad Khan,Sindh,4,86
+PK302,Diamir,Gilgit Baltistan,4,86
+PK605,Chakwal,Punjab,4,86
+PK201,Awaran,Balochistan,3,86
+PK624,Nankana Sahib,Punjab,3,86
+PK635,Toba Tek Singh,Punjab,3,86
+PK716,Mirpur Khas,Sindh,3,86
+PK631,Sahiwal,Punjab,3,86
+PK713,Larkana,Sindh,3,86
+PK629,Rajanpur,Punjab,3,86
+PK612,Jhang,Punjab,3,86
+PK231,Zhob,Balochistan,3,86
+PK503,Bannu,Khyber Pakhtunkhwa,3,86
+PK511,Haripur,Khyber Pakhtunkhwa,3,86
+PK228,Sibi,Balochistan,3,86
+PK219,Loralai,Balochistan,3,86
+PK209,Kachhi,Balochistan,3,86
+PK215,Killa Saifullah,Balochistan,3,86
+PK202,Barkhan,Balochistan,2,86
+PK514,Kohat,Khyber Pakhtunkhwa,2,86
+PK711,Khairpur,Sindh,2,86
+PK728,Umer Kot,Sindh,2,86
+PK230,Washuk,Balochistan,2,86
+PK508,Chitral Upper,Khyber Pakhtunkhwa,2,86
+PK232,Ziarat,Balochistan,2,86
+PK227,Sherani,Balochistan,2,86
+PK528,Peshawar,Khyber Pakhtunkhwa,2,86
+PK702,Central Karachi,Sindh,2,86
+PK636,Vehari,Punjab,2,86
+PK607,Dera Ghazi Khan,Punjab,2,86
+PK221,Musakhel,Balochistan,2,86
+PK723,Sukkur,Sindh,2,86
+PK615,Khanewal,Punjab,2,86
+PK619,Lodhran,Punjab,2,86
+PK210,Kalat,Balochistan,1,86
+PK703,Dadu,Sindh,1,86
+PK720,Shikarpur,Sindh,1,86
+PK721,South Karachi,Sindh,1,86
+PK715,Matiari,Sindh,1,86
+PK722,Sujawal,Sindh,1,86
+PK710,Kashmore,Sindh,1,86
+PK603,Bahawalpur,Punjab,1,86
+PK616,Khushab,Punjab,1,86
+PK234,Duki,Balochistan,1,86
+PK218,Lehri,Balochistan,1,86
+PK515,Kohistan Lower,Khyber Pakhtunkhwa,1,86
+PK534,Tor Ghar,Khyber Pakhtunkhwa,1,86
+PK604,Bhakkar,Punjab,1,86
+PK203,Chagai,Balochistan,0,86
+PK212,Kharan,Balochistan,0,86
+PK205,Gwadar,Balochistan,0,86
+PK222,Nasirabad,Balochistan,0,86
+PK220,Mastung,Balochistan,0,86
+PK217,Lasbela,Balochistan,0,86
+PK214,Killa Abdullah,Balochistan,0,86
+PK207,Jaffarabad,Balochistan,0,86
+PK211,Kech,Balochistan,0,86
+PK229,Sohbatpur,Balochistan,0,86
+PK225,Pishin,Balochistan,0,86
+PK235,Chaman,Balochistan,0,86
+PK233,Shaheed Sikandarabad,Balochistan,0,86
+PK224,Panjgur,Balochistan,0,86
+PK223,Nushki,Balochistan,0,86
+PK311,Darel,Gilgit Baltistan,0,86
+PK314,Rondu,Gilgit Baltistan,0,86
+PK312,Tangir,Gilgit Baltistan,0,86
+PK313,Gupis-Yasin,Gilgit Baltistan,0,86
+PK527,Orakzai,Khyber Pakhtunkhwa,0,86
+PK507,Chitral Lower,Khyber Pakhtunkhwa,0,86
+PK516,Kohistan Upper,Khyber Pakhtunkhwa,0,86
+PK517,Kolai Palas Kohistan,Khyber Pakhtunkhwa,0,86
+PK509,D. I. Khan,Khyber Pakhtunkhwa,0,86
+PK226,Quetta,Balochistan,0,86
+PK618,Leiah,Punjab,0,86
+PK705,Ghotki,Sindh,0,86
+PK712,Korangi Karachi,Sindh,0,86
+PK709,Kambar Shahdad Kot,Sindh,0,86
+PK708,Jamshoro,Sindh,0,86
+PK717,Naushahro Feroze,Sindh,0,86
+PK718,Sanghar,Sindh,0,86
+PK719,Shaheed Benazir Abad,Sindh,0,86
+PK714,Malir Karachi,Sindh,0,86
+PK727,Thatta,Sindh,0,86
