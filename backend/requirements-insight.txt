@@ -1,0 +1,6 @@
+# R2 document index only; kept apart from the pipeline venv so torch never changes its numpy
+-r requirements.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.4
+sentence-transformers>=3.0
+faiss-cpu>=1.8
