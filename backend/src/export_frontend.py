@@ -15,9 +15,10 @@ import duckdb
 from shapely import wkt
 
 from src import manifest
-from src.config import DB_PATH, ROOT
+from src.config import DATA, DB_PATH, ROOT
 
 OUT = ROOT.parent / "frontend" / "public" / "data" / "status.json"
+FLOW_STATUS = DATA / "flow_status.json"  # written by flows/hourly.py after each successful build
 SIMPLIFY_DEG = 0.01  # ~1 km; keeps the file small enough to ship with the page
 
 
@@ -72,6 +73,33 @@ def quality(con) -> list[dict]:
     return [dict(zip(keys, r)) for r in rows]
 
 
+def live_forecast(con) -> dict:
+    """Latest-run forecast rain per district and day; raw forecast, not a risk score."""
+    rows = con.execute("""
+        SELECT district_id, date_utc, days_ahead, precip_sum_mm, fetched_at_utc
+        FROM forecast_live WHERE days_ahead BETWEEN 1 AND 3 ORDER BY district_id, date_utc""").fetchall()
+    out: dict = {"fetched_at_utc": rows[0][4] if rows else None,
+                 "label": "Raw forecast rainfall (Open-Meteo latest run), not a model risk score",
+                 "precip_mm": defaultdict(dict)}
+    for district_id, day, ahead, precip, _ in rows:
+        out["precip_mm"][district_id][str(ahead)] = round(precip, 2)
+    return out
+
+
+def risk(con) -> dict | None:
+    """Model A probability of heavy rain per district at 24/48/72 h, each with its row id."""
+    rows = con.execute("""
+        SELECT district_id, lead_days, p_heavy_rain, row_id, date_utc, model_version, model_label
+        FROM risk_live ORDER BY district_id, lead_days""").fetchall()
+    if not rows:
+        return None
+    out: dict = {"model_version": rows[0][5], "label": rows[0][6], "by_district": defaultdict(dict)}
+    for district_id, lead, p, row_id, day, _, _ in rows:
+        out["by_district"][district_id][f"{24 * lead}h"] = {
+            "p": round(float(p), 4), "row_id": row_id, "date_utc": day.isoformat()}
+    return out
+
+
 def build(db_path=DB_PATH, out: Path = OUT) -> Path:
     with duckdb.connect(str(db_path), read_only=True) as con:
         have = _tables(con)
@@ -81,9 +109,14 @@ def build(db_path=DB_PATH, out: Path = OUT) -> Path:
             "districts": districts(con) if "districts" in have else [],
             "forecast": latest_forecast(con) if "forecast_day" in have else None,
             "quality": quality(con) if "quality_log" in have else [],
+            "live_forecast": live_forecast(con) if "forecast_live" in have else None,
+            "risk": risk(con) if "risk_live" in have else None,
+            "pipeline": json.loads(FLOW_STATUS.read_text()) if FLOW_STATUS.exists() else None,
         }
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(status, separators=(",", ":")))
+    tmp = out.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(status, separators=(",", ":")))
+    tmp.replace(out)  # atomic: the dashboard never reads a half-written file
     print(f"status.json: {len(status['districts'])} districts, "
           f"{len(status['quality'])} quality decisions, {out.stat().st_size // 1024} KB -> {out}")
     return out
