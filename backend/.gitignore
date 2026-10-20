@@ -20,3 +20,4 @@ data/gold/*
 *.nc4
 *.HDF5
 *.zip
+logs/

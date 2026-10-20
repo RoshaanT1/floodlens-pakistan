@@ -1,0 +1,7 @@
+{
+  "forecast_day.forecast_day_timely": {
+    "action": "flag",
+    "decided_at_utc": "2026-10-20T11:17:01Z",
+    "reason": "newest day more than 2 days before the latest fetch; dashboard shows the source as stale"
+  }
+}
