@@ -138,7 +138,9 @@ def report(db_path=DB_PATH) -> str:
                   f"- flagged, not named by NDMA: {len(only_model)} ({', '.join(sorted(only_model)) or 'none'})",
                   f"- named by NDMA, never flagged: {len(only_ndma)} ({', '.join(sorted(only_ndma)) or 'none'})",
                   "\nNDMA naming a district means it reported impacts or warnings there, not that rain "
-                  "crossed our threshold, so this is a sense check, not a score."]
+                  "crossed our threshold, so this is a sense check, not a score. Districts named in "
+                  "every sitrep (Islamabad, Lahore, Rawalpindi on 21 Oct) are mostly boilerplate "
+                  "(NDMA's address, rainfall station tables), not impact reports."]
     OUT.write_text("\n".join(lines) + "\n")
     print(f"-> {OUT}")
     return str(OUT)
