@@ -26,4 +26,4 @@ def test_checks_handle_weeks_concatenated_from_several_files():
     a = pd.DataFrame([_week(date(2026, 10, 1), 0)])
     b = pd.DataFrame([_week(date(2026, 10, 8), 100)])  # same index 0 as `a`
     p, _ = spi.check(pd.concat([a, b]))
-    assert p.quality_flags.tolist() == ["not_collected", None]
+    assert p.quality_flags.iloc[0] == "not_collected" and pd.isna(p.quality_flags.iloc[1])
