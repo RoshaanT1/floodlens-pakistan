@@ -8,7 +8,7 @@ PYTHON := python3
 endif
 PY := $(VENV_BIN)/python
 
-.PHONY: setup fetch data test
+.PHONY: setup fetch data export test
 
 setup:
 	$(PYTHON) -m venv .venv && $(VENV_BIN)/pip install -r requirements.txt
@@ -24,6 +24,10 @@ fetch:
 # verify SHA-256 against manifest, run quality checks.
 data:
 	$(PY) -m src.build
+
+# Offline: publish gold tables as ../frontend/public/data/status.json for the dashboard.
+export:
+	$(PY) -m src.export_frontend
 
 test:
 	$(PY) -m pytest -q tests
