@@ -80,8 +80,11 @@ pkill -f "flows.hourly serve"; pkill -f "prefect server start"
 .venv/bin/python -m flows.export_runs        # -> docs/prefect_runs.csv
 ```
 
-`fastapi` is pinned to 0.153.0: newer versions break the Prefect 3.8.8 server
-(`Body(min_items=...)`). The pin is in `requirements.txt`.
+Two pins in `requirements.txt` keep the Prefect 3.8.8 server working: `fastapi==0.153.0`
+(newer versions drop `Body(min_items=...)`) and `sqlalchemy<2.1`. With SQLAlchemy 2.1 the
+server runs and accepts manual runs, but its scheduler fails silently every minute and
+creates no scheduled runs. I found that at 02:00 and restarted the server at 02:02. Check that
+Scheduled runs appear in the UI after any reinstall.
 
 ## 4. Validation results
 
