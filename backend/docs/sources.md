@@ -30,9 +30,17 @@ licence). The `source` column below is that manifest key.
 | `ndma_advisory` | Advisories issued Jun to Oct 2025 | NDMA | https://www.ndma.gov.pk/storage/advisories/… | as above | Insight Agent citations |
 | `pmd_document` | Pakistan Monsoon 2025 Rainfall Update | PMD (Climate Data Processing Centre) | https://cdpc.pmd.gov.pk/Monsoon_2025_update/Pakistan_Monsoon_2025_Rainfall_Update.pdf | Government of Pakistan public document; terms not stated. Not redistributed. | Insight Agent citations |
 
+## Model B (B1)
+
+| Source key | What | Publisher | URL | Terms | Used for |
+| --- | --- | --- | --- | --- | --- |
+| `pbs_media_listing` | WordPress media listing; Wayback CDX listing | PBS; Internet Archive | https://www.pbs.gov.pk/wp-json/wp/v2/media?search=annex | public API; robots.txt allows | finding weekly files |
+| `pbs_spi_annex` | Weekly SPI city-wise annex (xlsx), 30 Apr 2025 onward | PBS | https://www.pbs.gov.pk/wp-content/uploads/2020/07/Annex_DD.MM.YYYY.xlsx | public statistics; terms to be confirmed | Model B target and features |
+| `pbs_spi_annex_archived` | Same annex (PDF) from PBS's old site, Jan 2023 to Apr 2025 | PBS, via Internet Archive copies | https://web.archive.org/web/<ts>id_/https://www.pbs.gov.pk/sites/default/files/price_statistics/weekly_spi/... | as above; the archive copy is unmodified (`id_`) | Model B history |
+
 ## Found but not fetched yet
 
-- **PBS weekly SPI** (Model B, B1). Each week has a post at
+- (Now fetched, see Model B above.) **PBS weekly SPI**: each week has a post at
   `https://www.pbs.gov.pk/weekly-sensitive-price-indicator-spi-for-the-week-ended-on-DD-MM-YYYY/`
   that links the city-wise annex as **xlsx** and PDF, e.g.
   `https://www.pbs.gov.pk/wp-content/uploads/2020/07/Annex_30.10.2025.xlsx`. The

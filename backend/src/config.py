@@ -39,6 +39,7 @@ LICENCES = {
     "ndma_sitrep": "NDMA website EULA: limited licence for personal/organisational use; not redistributed",
     "ndma_advisory": "NDMA website EULA: limited licence for personal/organisational use; not redistributed",
     "pbs_spi_annex": "PBS public government statistics; terms of use to be confirmed (see declaration)",
+    "pbs_spi_annex_archived": "PBS public government statistics (Internet Archive copy of pbs.gov.pk file); terms to be confirmed",
     "pbs_media_listing": "PBS website (public WordPress API); terms of use to be confirmed",
     "pmd_document": "Government of Pakistan (PMD) public document; terms not stated; not redistributed",
 }

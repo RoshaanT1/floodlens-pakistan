@@ -48,7 +48,7 @@ access fails", and access works for the team; only this machine lacks the login.
 | **A5/A6/E2** | `src/analysis_a.py report` (groups, weakest group, Buner 14–15 Aug 2025, NDMA comparison) is written and tested on fixtures. NDMA half of E2 done: `docs/ndma_districts_2025.csv` (86 sitreps; 125 districts named) | 8c679d8, 91f369f |
 | **R1** | `src/documents.py`: 86 NDMA monsoon 2025 sitreps, 55 advisories (Jun–Oct 2025), listing pages, all with manifest rows | 7d7f46c |
 | **R2** | `src/doc_index.py`: 1,708 sections from 141 documents (86 sitreps, 55 advisories), multilingual-e5-small + FAISS, in a separate `.venv-insight` | 7d7f46c |
-| **B1–B3** (start) | `src/spi.py`: 55 weekly annex xlsx (30 Apr 2025 to 15 Oct 2026), parsed to 47,685 rows; all 55 weeks complete (17 × 51); 337 rows flagged, none filled | 09b6ece, a70b548, 4115c13 |
+| **B1–B3** | `src/spi.py`: PBS xlsx annex for 30 Apr 2025 to 15 Oct 2026, plus PBS's old-site PDF annexes for Jan 2023 to Apr 2025 via the Internet Archive (largest capture per week; truncated captures skipped), with a PDF table parser. **169 weeks, 5 Jan 2023 to 15 Oct 2026, all complete (17 cities × 51 items), 146,523 rows; 1,810 rows flagged** (min/avg/max order, not collected, >50% weekly jump), none filled. Weeks missing from both sources: e.g. 30 Mar 2023, 13 Apr 2023, 8 Feb 2024 | 09b6ece, a70b548, 4115c13, 31e1c7e, affaf93, 40d2705 |
 | dedup | `docs/dedup_notes.md` compares the two D4–D6/Q1 implementations; nothing deleted | af8ca52 |
 
 Tests: **56 passing** (`make test`). `make data` passes on the current snapshot (17 s, 767 MB peak).
@@ -103,8 +103,15 @@ no artifact, and the dashboard keeps showing raw forecasts only.
 - **PMD**: `cdpc.pmd.gov.pk` returned HTTP 500 for the 2025 monsoon update and for robots.txt;
   `www.pmd.gov.pk` errors as well. Logged; no PMD files stored.
 - **PDMA sites**: not crawled.
-- **PBS SPI before 30 Apr 2025**: not in PBS's media listing under "annex"; older file names
-  differ. B1 asks for Jan 2023 onward, so ~2.3 years are still missing (docs/sources.md).
+- **PBS SPI**: weeks before 30 Apr 2025 come from Internet Archive copies of PBS's old site,
+  because PBS's current site doesn't list them. The provenance (the archive URL) is in the manifest.
+  A few weeks have no archived copy.
+- **Incident, 03:10 PKT (my mistake):** refetching complete Wayback captures reused file names,
+  and `save_raw` overwrote 21 raw files, so `manifest.verify` failed. Fixed before any hourly
+  build ran: the original bytes were re-downloaded from the same archive URLs (all SHA-256
+  match), the 21 new manifest rows were repointed to timestamped names, and `save_raw` now
+  refuses to overwrite a raw file with different content (test added). The 21 manifest rows
+  written minutes earlier were edited (path column only); no other manifest row was touched.
 - **Model B (B4–B6)**: not started.
 - **R2 Urdu**: an Urdu query for Buner floods returns related flood advisories but not the
   Buner sitrep sections that the English query finds. Cross-lingual retrieval with the
@@ -169,3 +176,5 @@ python3 -m venv .venv-insight && .venv-insight/bin/pip install -r requirements-i
 | capable-puma (manual) | 21 Oct 01:28 | Completed | 28.5 min | 1,976 calls; forecasts now to 31 Oct 2024; IMERG skipped (no login) |
 | (02:05 slot, before fix) | – | – | – | scheduler broken by SQLAlchemy 2.1; fixed and server restarted at 02:02, so the 02:05 slot was kept |
 | outrageous-owl (scheduled) | 21 Oct 02:05 | Completed | 28.5 min | 1,950 calls; forecasts now to 28 Feb 2025 |
+| functional-wapiti (scheduled) | 21 Oct 03:05 | Completed | 27.7 min | 1,946 calls; forecasts now to 30 Jun 2025 (training period complete) |
+| fascinating-oyster (scheduled) | 21 Oct 04:05 | Completed | 4.2 min | 257 calls (UTC day 20 Oct budget reached 8,877 of 9,000) |
