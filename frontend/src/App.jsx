@@ -10,6 +10,7 @@ import { ThemeProvider } from '@/lib/theme';
 import SituationRoom from '@/pages/SituationRoom';
 import FoodPrices from '@/pages/FoodPrices';
 import SourcesMethods from '@/pages/SourcesMethods';
+import LiveData from '@/pages/LiveData';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -42,6 +43,7 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<SituationRoom />} />
       <Route path="/food-prices" element={<FoodPrices />} />
       <Route path="/sources" element={<SourcesMethods />} />
+      <Route path="/live" element={<LiveData />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

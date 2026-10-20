@@ -34,6 +34,23 @@ export type BackendStatus = {
   }[];
   forecast: { date_utc: string; precip_mm_by_lead: Record<string, Record<string, number>> } | null;
   quality: QualityDecision[];
+  /** Latest-run forecast rain, keyed by district then days ahead ("1".."3"). Not a risk score. */
+  live_forecast?: {
+    fetched_at_utc: string | null;
+    label: string;
+    precip_mm: Record<string, Record<string, number>>;
+  } | null;
+  /** Model A output; absent until a validation-stage artifact exists. */
+  risk?: {
+    model_version: string;
+    label: string;
+    by_district: Record<string, Record<"24h" | "48h" | "72h", { p: number; row_id: string; date_utc: string }>>;
+  } | null;
+  pipeline?: {
+    last_success_utc: string;
+    run_started_utc: string;
+    fetch: Record<string, string>;
+  } | null;
 };
 
 /** Set once at startup; null means the pipeline file was missing and the UI is all mock. */
@@ -45,6 +62,12 @@ const SOURCE_INFO: Record<string, Omit<Source, "id" | "lastUpdated">> = {
     provides: "District boundaries (admin level 2), names, provinces and centroids",
     updateFrequency: "Static snapshot",
     url: "https://data.humdata.org/dataset/cod-ab-pak",
+  },
+  open_meteo_live_forecast: {
+    name: "Open-Meteo latest forecast run",
+    provides: "Next 3 days of forecast rainfall per district (live view only, never training)",
+    updateFrequency: "Every 6 hours",
+    url: "https://open-meteo.com/en/docs/previous-runs-api",
   },
   open_meteo_previous_runs: {
     name: "Open-Meteo Previous Runs",
@@ -60,7 +83,7 @@ const SOURCE_INFO: Record<string, Omit<Source, "id" | "lastUpdated">> = {
   },
 };
 
-const formatPkt = (iso: string) =>
+export const formatPkt = (iso: string) =>
   new Date(iso).toLocaleString("en-GB", {
     timeZone: "Asia/Karachi",
     day: "2-digit",

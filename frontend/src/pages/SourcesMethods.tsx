@@ -56,7 +56,7 @@ function ModelSection({
   model: { method: string[]; accuracy: { label: string; value: string }[]; limits: string[] };
 }) {
   return (
-    <Panel title={title}>
+    <Panel title={title} subtitle="Design placeholder: the method text and every figure below are sample content, not measured results.">
       <div className="space-y-3">
         <div className="space-y-2">
           {model.method.map((paragraph) => (
