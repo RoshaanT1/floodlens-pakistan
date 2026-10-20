@@ -62,6 +62,11 @@ class EarthdataSession(requests.Session):
                 del prepared.headers["Authorization"]
 
 
+def has_credentials() -> bool:
+    load_dotenv(ROOT / ".env")
+    return bool(os.getenv("EARTHDATA_USERNAME") and os.getenv("EARTHDATA_PASSWORD"))
+
+
 def session() -> EarthdataSession:
     load_dotenv(ROOT / ".env")
     user, pw = os.getenv("EARTHDATA_USERNAME"), os.getenv("EARTHDATA_PASSWORD")
@@ -101,7 +106,7 @@ def download(s: requests.Session, query: str, tries: int = 5) -> bytes:
     raise AssertionError("unreachable")
 
 
-def fetch(start: date, end: date, workers: int) -> None:
+def fetch(start: date, end: date, workers: int, max_days: int | None = None) -> None:
     s = session()
     done = manifest.fetched_queries(SOURCE)
     todo = []
@@ -112,6 +117,9 @@ def fetch(start: date, end: date, workers: int) -> None:
             if start <= day <= end and q not in done:
                 todo.append((day, filename, q))
         month = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
+    if max_days is not None and len(todo) > max_days:
+        print(f"{len(todo)} days missing; fetching the first {max_days} this run")
+        todo = todo[:max_days]
     print(f"{len(todo)} days to fetch")
 
     # downloads run in threads; manifest writes stay on this thread
