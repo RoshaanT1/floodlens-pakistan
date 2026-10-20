@@ -1,0 +1,7 @@
+{
+  "forecast_day.forecast_day_timely": {
+    "action": "flag",
+    "decided_at_utc": "2026-10-20T11:16:08Z",
+    "reason": "newest day 2024-06-30 is more than 2 days before fetch 2026-10-20"
+  }
+}

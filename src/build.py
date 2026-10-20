@@ -5,7 +5,15 @@ builds before every fetcher exists; D8 makes every step mandatory.
 """
 import sys
 
-from src import districts, forecasts, imerg, labels, manifest, rain
+from src import districts, forecasts, imerg, labels, manifest, quality, rain
+
+# (source the step needs, step, tables the quality agent checks after it)
+STEPS = [
+    (districts.SOURCE, districts.build, ["districts"]),
+    (forecasts.SOURCE, forecasts.build, ["forecast_day"]),
+    (imerg.SOURCE, rain.build, ["rain_district_day"]),
+    (imerg.SOURCE, labels.main, []),  # labels are built from quality-checked rain
+]
 
 
 def main() -> int:
@@ -18,13 +26,14 @@ def main() -> int:
         return 1
 
     sources = {r["source"] for r in rows}
-    steps = [(districts.SOURCE, districts.build), (forecasts.SOURCE, forecasts.build),
-             (imerg.SOURCE, rain.build), (imerg.SOURCE, labels.main)]
-    for source, step in steps:
-        if source in sources:
-            step()
-        else:
-            print(f"skip {source}: not in manifest yet")
+    log = []
+    for source, step, tables in STEPS:
+        if source not in sources:
+            print(f"skip {step.__module__}.{step.__name__}: {source} not in manifest yet")
+            continue
+        step()
+        log += quality.run(tables)  # each table is checked exactly once, right after it is built
+    print(quality.summary(quality.write_log(log)))
     return 0
 
 
