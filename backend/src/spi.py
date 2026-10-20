@@ -29,7 +29,7 @@ import pandas as pd
 import requests
 
 from src import manifest
-from src.config import DB_PATH, ROOT
+from src.config import CLEAN, DB_PATH, ROOT
 
 SOURCE = "pbs_spi_annex"
 ARCHIVED = "pbs_spi_annex_archived"
@@ -193,6 +193,18 @@ def check(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return p, weeks
 
 
+def _parsed(r: dict) -> pd.DataFrame:
+    """Parse one raw annex, cached in data/clean by the file's SHA-256 (PDF tables are slow)."""
+    cache = CLEAN / "spi_parsed" / f"{r['sha256']}.parquet"
+    if cache.exists():
+        return pd.read_parquet(cache)
+    parse = parse_annex_pdf if r["source"] == ARCHIVED else parse_annex
+    df = parse(ROOT / r["path"])
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(cache, index=False)
+    return df
+
+
 def build(db_path=DB_PATH) -> int:
     rows = [r for r in manifest.read_manifest() if r["source"] in (SOURCE, ARCHIVED)]
     if not rows:
@@ -200,8 +212,7 @@ def build(db_path=DB_PATH) -> int:
     frames = []
     for r in rows:
         try:
-            parse = parse_annex_pdf if r["source"] == ARCHIVED else parse_annex
-            frames.append(parse(ROOT / r["path"]))
+            frames.append(_parsed(r))
         except Exception as e:  # a layout we cannot read is logged, never guessed
             print(f"  could not parse {r['path']}: {e}")
     prices, weeks = check(pd.concat(frames).drop_duplicates(["week_end", "city", "item_no"], keep="last"))
