@@ -92,7 +92,7 @@ def parse_annex(path) -> pd.DataFrame:
 
 def check(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """B3 flags on the long table, plus one quality row per week. Values are never changed except 0 -> NULL."""
-    p = prices.sort_values(["city", "item_no", "week_end"]).copy()
+    p = prices.sort_values(["city", "item_no", "week_end"]).reset_index(drop=True)
     flags = pd.Series([[] for _ in range(len(p))], index=p.index)
     zero = (p[["min_pkr", "avg_pkr", "max_pkr"]] == 0).any(axis=1)
     p.loc[zero, ["min_pkr", "avg_pkr", "max_pkr"]] = None  # not collected, never a real zero price

@@ -20,3 +20,10 @@ def test_checks_flag_and_never_fill():
     assert by.loc[(date(2026, 10, 15), 2), "quality_flags"] == "min_avg_max_order"
     assert by.loc[(date(2026, 10, 15), 2), "avg_pkr"] == 50  # value kept as published
     assert not weeks.complete.any()  # one city, not 17 x 51
+
+
+def test_checks_handle_weeks_concatenated_from_several_files():
+    a = pd.DataFrame([_week(date(2026, 10, 1), 0)])
+    b = pd.DataFrame([_week(date(2026, 10, 8), 100)])  # same index 0 as `a`
+    p, _ = spi.check(pd.concat([a, b]))
+    assert p.quality_flags.tolist() == ["not_collected", None]
