@@ -20,6 +20,9 @@ LAYER = "pak_admin2.geojson"
 
 
 def fetch() -> None:
+    if URL in manifest.fetched_queries(SOURCE):
+        print("district boundaries already fetched; skipping")
+        return
     r = requests.get(URL, timeout=600)
     r.raise_for_status()
     path = manifest.save_raw(r.content, SOURCE, URL, "pak_admin_boundaries.geojson.zip")
