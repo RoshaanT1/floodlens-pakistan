@@ -16,7 +16,7 @@ import json
 import sys
 import time
 from datetime import date, datetime, timedelta, timezone
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import duckdb
 import pandas as pd
@@ -26,6 +26,8 @@ from src import manifest
 from src.config import DB_PATH, FORECAST_START, ROOT
 
 SOURCE = "open_meteo_previous_runs"
+LIVE_SOURCE = "open_meteo_live_forecast"  # same endpoint, latest run, next 4 days (live view only)
+LIVE_EVERY_HOURS = 6                      # models update every 6 h; don't pay for more
 URL = "https://previous-runs-api.open-meteo.com/v1/forecast"
 VARIABLES = ["precipitation", "relative_humidity_2m", "pressure_msl", "cloud_cover", "wind_speed_10m"]
 LEADS = [1, 2, 3]
@@ -61,6 +63,27 @@ def build_query(lats, lons, start: date, end: date) -> str:
     return f"{URL}?{urlencode(params)}"
 
 
+def query_weight(query: str) -> float:
+    """Free-tier calls a stored query cost, recomputed from its parameters."""
+    q = parse_qs(urlparse(query).query)
+    n_loc = len(q["latitude"][0].split(","))
+    n_days = (date.fromisoformat(q["end_date"][0]) - date.fromisoformat(q["start_date"][0])).days + 1
+    n_vars = len(q["hourly"][0].split(","))
+    return n_loc * max(1.0, n_vars / 10) * max(1.0, n_days / 14)
+
+
+def calls_spent(hours: float = 24, now: datetime | None = None) -> float:
+    """Calls charged to this machine in the last `hours`, from the manifest (all Open-Meteo sources)."""
+    now = now or datetime.now(timezone.utc)
+    since = (now - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return sum(query_weight(r["query"]) for r in manifest.read_manifest()
+               if r["source"] in (SOURCE, LIVE_SOURCE) and r["fetched_at_utc"] >= since)
+
+
+class DailyLimitReached(Exception):
+    pass
+
+
 def get_with_retry(url: str, tries: int = 5) -> bytes:
     for attempt in range(1, tries + 1):
         try:
@@ -68,7 +91,7 @@ def get_with_retry(url: str, tries: int = 5) -> bytes:
             if r.status_code == 429:
                 reason = r.json().get("reason", "")
                 if "daily" in reason.lower():
-                    raise SystemExit(f"daily limit reached: {reason}. Re-run tomorrow to resume.")
+                    raise DailyLimitReached(f"daily limit reached: {reason}. Re-run tomorrow to resume.")
                 print(f"  429 ({reason}); waiting 65 s")
                 time.sleep(65)
                 continue
@@ -112,10 +135,80 @@ def fetch(start: date, end: date, budget: float) -> None:
     print(f"fetch complete ({spent:.0f} calls this run)")
 
 
+def fetch_live(now: datetime | None = None, db_path=DB_PATH) -> bool:
+    """Latest-run forecast for today..today+3 at every centroid, at most once per 6 h.
+
+    Used only for the live view and live scoring, never for training (training uses the
+    archived `_previous_dayN` values). Returns True if a new file was saved.
+    """
+    now = now or datetime.now(timezone.utc)
+    last = manifest.latest(LIVE_SOURCE)
+    if last and last["fetched_at_utc"] >= (now - timedelta(hours=LIVE_EVERY_HOURS)).strftime("%Y-%m-%dT%H:%M:%SZ"):
+        print(f"live forecast fetched {last['fetched_at_utc']}; skipping")
+        return False
+    d = districts(db_path)
+    today = now.date()
+    params = {
+        "latitude": ",".join(f"{x:.4f}" for x in d.centroid_lat),
+        "longitude": ",".join(f"{x:.4f}" for x in d.centroid_lon),
+        "hourly": ",".join(VARIABLES),
+        "start_date": today.isoformat(),
+        "end_date": (today + timedelta(days=3)).isoformat(),
+        "timezone": "GMT",
+    }
+    query = f"{URL}?{urlencode(params)}"
+    content = get_with_retry(query)
+    manifest.save_raw(content, LIVE_SOURCE, query, f"{now:%Y-%m-%dT%H%MZ}.json")
+    print(f"live forecast saved ({query_weight(query):.0f} calls)")
+    return True
+
+
+def build_live(db_path=DB_PATH) -> int:
+    """Newest live fetch -> `forecast_live` (district, UTC day, days ahead of the fetch day)."""
+    row = manifest.latest(LIVE_SOURCE)
+    if row is None:
+        print("skip forecast_live: no live fetch yet")
+        return 0
+    d = districts(db_path)
+    ids = {(f"{r.centroid_lat:.4f}", f"{r.centroid_lon:.4f}"): r.district_id for r in d.itertuples()}
+    q = parse_qs(urlparse(row["query"]).query)
+    payload = json.loads((ROOT / row["path"]).read_bytes())
+    payload = payload if isinstance(payload, list) else [payload]
+    frames = []
+    for lat, lon, loc in zip(q["latitude"][0].split(","), q["longitude"][0].split(","), payload):
+        df = pd.DataFrame({v: loc["hourly"][v] for v in VARIABLES})
+        df["time_utc"] = pd.to_datetime(loc["hourly"]["time"])
+        df["district_id"] = ids[(lat, lon)]
+        frames.append(df)
+    hourly = pd.concat(frames)  # noqa: F841 (read by DuckDB below)
+    fetched = row["fetched_at_utc"]
+    with duckdb.connect(str(db_path)) as con:
+        con.execute(f"""
+            CREATE OR REPLACE TABLE forecast_live AS
+            SELECT district_id,
+                   CAST(time_utc AS DATE)                                   AS date_utc,
+                   date_diff('day', CAST(TIMESTAMP '{fetched[:19]}' AS DATE),
+                             CAST(time_utc AS DATE))                        AS days_ahead,
+                   sum(precipitation)                AS precip_sum_mm,
+                   max(precipitation)                AS precip_max_hourly_mm,
+                   avg(relative_humidity_2m)         AS rh_mean_pct,
+                   avg(pressure_msl)                 AS pressure_mean_hpa,
+                   avg(cloud_cover)                  AS cloud_mean_pct,
+                   max(wind_speed_10m)               AS wind_max_kmh,
+                   count(precipitation)              AS n_hours,
+                   '{fetched}'                       AS fetched_at_utc
+            FROM hourly
+            GROUP BY ALL
+            HAVING count(precipitation) > 0
+            ORDER BY district_id, date_utc
+        """)
+        n = con.execute("SELECT count(*) FROM forecast_live").fetchone()[0]
+    print(f"forecast_live: {n} rows (fetched {fetched})")
+    return n
+
+
 def parse_raw(path, query: str, ids_by_coord: dict) -> pd.DataFrame:
     """One raw response -> hourly rows (district_id, time_utc, lead_days, variable values)."""
-    from urllib.parse import parse_qs, urlparse
-
     q = parse_qs(urlparse(query).query)
     lats = q["latitude"][0].split(",")
     lons = q["longitude"][0].split(",")
@@ -170,11 +263,12 @@ def build(db_path=DB_PATH) -> int:
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("cmd", choices=["fetch", "build"])
+    p.add_argument("cmd", choices=["fetch", "build", "live", "build-live"])
     p.add_argument("--start", type=date.fromisoformat, default=FORECAST_START)
     p.add_argument("--end", type=date.fromisoformat,
                    default=datetime.now(timezone.utc).date() - timedelta(days=1))
     p.add_argument("--budget", type=float, default=9000)
     a = p.parse_args()
-    fetch(a.start, a.end, a.budget) if a.cmd == "fetch" else build()
+    {"fetch": lambda: fetch(a.start, a.end, a.budget), "build": build,
+     "live": fetch_live, "build-live": build_live}[a.cmd]()
     sys.exit(0)

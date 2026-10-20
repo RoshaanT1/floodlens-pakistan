@@ -2,6 +2,7 @@
 
 The split dates and target definitions are frozen (see TASKS.md, "Fixed decisions").
 """
+import os
 from datetime import date
 from pathlib import Path
 
@@ -11,7 +12,9 @@ RAW = DATA / "raw"
 CLEAN = DATA / "clean"
 GOLD = DATA / "gold"
 MANIFEST = DATA / "manifest.csv"
-DB_PATH = DATA / "floodlens.duckdb"
+# The hourly flow builds into a scratch copy and swaps it in, so a failed run never
+# touches the live database (flows/hourly.py).
+DB_PATH = Path(os.environ.get("FLOODLENS_DB", DATA / "floodlens.duckdb"))
 
 # Fixed splits (never change after seeing results)
 TRAIN_END = date(2025, 6, 30)
@@ -31,4 +34,9 @@ LICENCES = {
     "ocha_cod_ab": "CC BY-IGO (OCHA via HDX)",
     "open_meteo_previous_runs": "CC BY 4.0 (Open-Meteo)",
     "imerg_late_daily": "NASA EOSDIS open data policy",
+    "open_meteo_live_forecast": "CC BY 4.0 (Open-Meteo)",
+    "ndma_listing": "NDMA website EULA: limited licence for personal/organisational use; not redistributed",
+    "ndma_sitrep": "NDMA website EULA: limited licence for personal/organisational use; not redistributed",
+    "ndma_advisory": "NDMA website EULA: limited licence for personal/organisational use; not redistributed",
+    "pmd_document": "Government of Pakistan (PMD) public document; terms not stated; not redistributed",
 }

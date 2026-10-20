@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { to: "/", label: "Situation Room", end: true },
   { to: "/food-prices", label: "Food Prices", end: false },
+  { to: "/live", label: "Live data", end: false },
   { to: "/sources", label: "Sources & Methods", end: false },
 ];
 
@@ -32,7 +33,7 @@ export default function TopBar() {
         </Link>
 
         <span className="hidden items-center gap-1.5 rounded border border-border bg-background/60 px-2 py-[3px] text-xs text-muted-foreground sm:inline-flex">
-          <span className="fl-pulse h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
           {LIVE_LABEL}
         </span>
 

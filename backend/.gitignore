@@ -21,3 +21,8 @@ data/gold/*
 *.HDF5
 *.zip
 logs/
+
+# hourly flow
+data/flow_status.json
+*.json.tmp
+*.building.duckdb
