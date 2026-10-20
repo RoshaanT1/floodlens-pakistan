@@ -18,7 +18,7 @@ export const DAY_MS = 86_400_000;
 export const DAY_OFFSETS = Array.from({ length: 15 }, (_, i) => i - 7);
 export const NOW_INDEX = 7;
 // Situation Room and Food Prices run on this sample scenario; real pipeline output is on /live.
-export const LIVE_LABEL = "Sample scenario, not live data";
+export const LIVE_LABEL = "Map and prices: sample scenario";
 
 export const dateAtOffset = (offset: number) =>
   new Date(MOCK_NOW.getTime() + offset * DAY_MS).toISOString().slice(0, 10);
