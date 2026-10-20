@@ -10,6 +10,7 @@ fetch:
 	$(PY) -m src.districts fetch
 	$(PY) -m src.districts build
 	$(PY) -m src.forecasts fetch
+	$(PY) -m src.imerg fetch
 
 # Offline: rebuild clean/gold layers from the frozen raw snapshot.
 data:
