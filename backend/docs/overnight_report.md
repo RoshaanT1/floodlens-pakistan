@@ -176,3 +176,4 @@ python3 -m venv .venv-insight && .venv-insight/bin/pip install -r requirements-i
 | capable-puma (manual) | 21 Oct 01:28 | Completed | 28.5 min | 1,976 calls; forecasts now to 31 Oct 2024; IMERG skipped (no login) |
 | (02:05 slot, before fix) | – | – | – | scheduler broken by SQLAlchemy 2.1; fixed and server restarted at 02:02, so the 02:05 slot was kept |
 | outrageous-owl (scheduled) | 21 Oct 02:05 | Completed | 28.5 min | 1,950 calls; forecasts now to 28 Feb 2025 |
+| functional-wapiti (scheduled) | 21 Oct 03:05 | Completed | 27.7 min | 1,946 calls; forecasts now to 30 Jun 2025 (training period complete) |
