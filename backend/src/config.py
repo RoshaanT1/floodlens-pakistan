@@ -35,4 +35,8 @@ LICENCES = {
     "open_meteo_previous_runs": "CC BY 4.0 (Open-Meteo)",
     "imerg_late_daily": "NASA EOSDIS open data policy",
     "open_meteo_live_forecast": "CC BY 4.0 (Open-Meteo)",
+    "ndma_listing": "NDMA website EULA: limited licence for personal/organisational use; not redistributed",
+    "ndma_sitrep": "NDMA website EULA: limited licence for personal/organisational use; not redistributed",
+    "ndma_advisory": "NDMA website EULA: limited licence for personal/organisational use; not redistributed",
+    "pmd_document": "Government of Pakistan (PMD) public document; terms not stated; not redistributed",
 }

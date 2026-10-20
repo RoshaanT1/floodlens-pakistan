@@ -40,6 +40,7 @@ FEATURES = [
     "lead_days", "precip_sum_mm", "precip_max_hourly_mm", "rh_mean_pct", "pressure_mean_hpa",
     "cloud_mean_pct", "wind_max_kmh", "fc_over_threshold", "log_threshold_mm", "clim_p",
     "month_sin", "month_cos", "obs_wettest_mm", "obs_mean_3d_mm", "obs_mean_7d_mm",
+    "elevation_m", "coastal", "flood_prone",  # D7; NULL when district_attributes is missing
 ]
 
 
@@ -89,13 +90,24 @@ ASSEMBLE = """
               AND o.date_utc BETWEEN f.date_utc - f.gap - 2 AND f.date_utc - f.gap) AS obs_mean_3d_mm,
            (SELECT avg(o.mean_mm) FROM obs o WHERE o.district_id = f.district_id
               AND o.date_utc BETWEEN f.date_utc - f.gap - 6 AND f.date_utc - f.gap) AS obs_mean_7d_mm
+           {attr_cols}
            {label_cols}
     FROM fc f
     JOIN thresholds t USING (district_id)
     LEFT JOIN baseline_climatology b ON b.district_id = f.district_id AND b.month = month(f.date_utc)
+    {attr_join}
     {label_join}
     ORDER BY row_id
 """
+
+
+def _attr_sql(con) -> dict:
+    have = {t for (t,) in con.execute("SHOW TABLES").fetchall()}
+    if "district_attributes" in have:
+        return {"attr_cols": ", a.elevation_m, a.coastal::INTEGER AS coastal, a.flood_prone::INTEGER AS flood_prone",
+                "attr_join": "LEFT JOIN district_attributes a ON a.district_id = f.district_id"}
+    return {"attr_cols": ", NULL::DOUBLE AS elevation_m, NULL::INTEGER AS coastal, NULL::INTEGER AS flood_prone",
+            "attr_join": ""}
 
 
 def _gap_case(lead_col: str) -> str:
@@ -107,7 +119,7 @@ def build_features(con) -> pd.DataFrame:
     forecast_sql = f"""SELECT *, {_gap_case('lead_days')} AS gap FROM forecast_day
                        WHERE lead_days IN {LEADS}"""
     sql = ASSEMBLE.format(
-        forecast_sql=forecast_sql,
+        forecast_sql=forecast_sql, **_attr_sql(con),
         label_cols=", l.label, l.low_confidence",
         label_join="LEFT JOIN labels l ON l.district_id = f.district_id AND l.date_utc = f.date_utc")
     return con.execute(sql).df()
@@ -117,7 +129,8 @@ def build_live_features(con) -> pd.DataFrame:
     """Live forecast (days_ahead 1..3) -> the same features, no labels."""
     forecast_sql = f"""SELECT *, days_ahead AS lead_days, {_gap_case('days_ahead')} AS gap
                        FROM forecast_live WHERE days_ahead IN {LEADS}"""
-    return con.execute(ASSEMBLE.format(forecast_sql=forecast_sql, label_cols="", label_join="")).df()
+    return con.execute(ASSEMBLE.format(forecast_sql=forecast_sql, label_cols="", label_join="",
+                                       **_attr_sql(con))).df()
 
 
 def features(db_path=DB_PATH) -> int:
@@ -203,8 +216,8 @@ def make_model(kind: str):
 class Calibrated:
     """Fitted model + Platt scaling on the logit of its validation-set probabilities."""
 
-    def __init__(self, model, a: float = 1.0, b: float = 0.0):
-        self.model, self.a, self.b = model, a, b
+    def __init__(self, model, features: list[str], a: float = 1.0, b: float = 0.0):
+        self.model, self.features, self.a, self.b = model, features, a, b
 
     @staticmethod
     def _logit(p):
@@ -212,7 +225,7 @@ class Calibrated:
         return np.log(p / (1 - p))
 
     def raw(self, X):
-        return self.model.predict_proba(X[FEATURES])[:, 1]
+        return self.model.predict_proba(X[self.features])[:, 1]
 
     def fit_calibration(self, X, y):
         from sklearn.linear_model import LogisticRegression
@@ -225,13 +238,13 @@ class Calibrated:
         return 1 / (1 + np.exp(-z))
 
 
-def crossfit_calibrated(model, val: pd.DataFrame) -> np.ndarray:
+def crossfit_calibrated(model, features: list[str], val: pd.DataFrame) -> np.ndarray:
     """Honest calibrated validation probabilities: calibrate on odd ISO weeks, score even, and swap."""
     week = pd.to_datetime(val["date_utc"]).dt.isocalendar().week.to_numpy() % 2
     p = np.empty(len(val))
     for k in (0, 1):
         fit, score = week != k, week == k
-        c = Calibrated(model).fit_calibration(val[fit], val.loc[fit, "label"].astype(int))
+        c = Calibrated(model, features).fit_calibration(val[fit], val.loc[fit, "label"].astype(int))
         p[score] = c.predict(val[score])
     return p
 
@@ -271,12 +284,14 @@ def train(db_path=DB_PATH) -> dict:
     log_experiment("A2 baseline: raw forecast cut at threshold", "-", f"val Brier 24h {fmt(raw24)}",
                    0, _peak_mb(), "baseline")
 
+    used = [f for f in FEATURES if tr[f].notna().any()]  # e.g. D7 columns before attributes exist
+    report["features"] = used
     best, best_score = None, clim24["brier"]
     previous = f"climatology {clim24['brier']:.4f}"
     for kind in ("logreg", "gbm"):
         t0 = time.perf_counter()
-        model = make_model(kind).fit(tr[FEATURES], tr["label"].astype(int))
-        p_val = crossfit_calibrated(model, val)
+        model = make_model(kind).fit(tr[used], tr["label"].astype(int))
+        p_val = crossfit_calibrated(model, used, val)
         secs = time.perf_counter() - t0
         scores = score_by_lead(val, p_val)
         report["models"][kind] = {"validation": scores, "train_seconds": secs}
@@ -292,7 +307,7 @@ def train(db_path=DB_PATH) -> dict:
     report["beats_climatology_on_validation"] = best is not None
     if best:
         kind, model = best
-        final = Calibrated(model).fit_calibration(val, val["label"].astype(int))
+        final = Calibrated(model, used).fit_calibration(val, val["label"].astype(int))
         report["artifact"] = save_artifact(final, kind, report)
     else:
         print("no model beat climatology on validation; no artifact written, live view keeps climatology")
@@ -308,7 +323,7 @@ def save_artifact(model: Calibrated, kind: str, report: dict) -> str:
     out = MODEL_DIR / version
     out.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, out / "model.joblib")
-    meta = {"version": version, "kind": kind, "features": FEATURES, "label": STAGE_LABEL,
+    meta = {"version": version, "kind": kind, "features": model.features, "label": STAGE_LABEL,
             "train_end": TRAIN_END.isoformat(), "validation": [VALID_START.isoformat(), VALID_END.isoformat()],
             "validation_scores": report["models"][kind]["validation"]}
     (out / "meta.json").write_text(json.dumps(meta, indent=2))
