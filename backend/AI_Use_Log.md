@@ -1,0 +1,11 @@
+# AI Use Log
+
+Material AI use, as the HackInsight rules require. Every entry names the team member who can explain the result.
+
+| Date | Tool and version | Task | What we kept or changed | Who can explain it |
+| --- | --- | --- | --- | --- |
+| 2026-10-19 | Claude Opus 5.5 (Anthropic), via claude.ai | Compared project ideas, checked data sources, drafted the project plan and DATASET_DECLARATION.md | [What you verified or edited] | [Name] |
+| 2026-10-20 | Claude Opus 5.5 (Anthropic), via Claude Code | Wrote repo scaffold (S1), manifest writer (D1), district loader (D2), Open-Meteo forecast fetcher with quota throttling (D3), `make data` runner and tests; probed APIs and found the forecast archive starts Feb 2024 | [What you verified or edited] | [Name] |
+| 2026-10-20 | Claude Sonnet 4.6 (Google DeepMind), via Antigravity | Dependency audit and install (earthaccess 0.17, h5py 3.16, numpy 2.4 added to requirements.txt); fixed EARTH_DATA_TOKEN→EARTHDATA_TOKEN env-var mismatch in fetch_imerg.py; verified S2 (GPM_3IMERGDL V07 confirmed back to 2015-01-01); verified D4 --test-one-day downloads one granule and appends manifest row; built D5 (src/build_rain_district.py — HDF5→district rain table with shapely 2.x point-in-polygon, element-wise pixel indexing), D6 (src/build_thresholds.py — 95th-pct wet-day threshold, exceedance labels 2024+, baseline climatology), Q1 (src/quality_checks.py — pandera.pandas schema/range/duplicate/timeliness checks for districts/forecasts/rain), D8 (updated src/build.py — full D1→D6 pipeline + Q1 in make data); wrote 26 passing offline tests (tests/test_fetch_imerg.py, test_build_rain_district.py, test_build_thresholds.py, test_quality_checks.py); added conftest.py; fixed shapely.vectorized→shapely.contains_xy for Shapely 2.x; fixed np.ix_ outer-product bug (was returning 81 pixels for 9-pixel grid); updated Makefile for Windows venv path and fetch_imerg step; updated .env.example | [What you verified or edited] | [Name] |
+
+Add a row whenever AI writes or shapes code, data choices or text you submit.
