@@ -5,7 +5,7 @@ builds before every fetcher exists; D8 makes every step mandatory.
 """
 import sys
 
-from src import districts, forecasts, manifest
+from src import districts, forecasts, imerg, labels, manifest, rain
 
 
 def main() -> int:
@@ -18,7 +18,8 @@ def main() -> int:
         return 1
 
     sources = {r["source"] for r in rows}
-    steps = [(districts.SOURCE, districts.build), (forecasts.SOURCE, forecasts.build)]
+    steps = [(districts.SOURCE, districts.build), (forecasts.SOURCE, forecasts.build),
+             (imerg.SOURCE, rain.build), (imerg.SOURCE, labels.main)]
     for source, step in steps:
         if source in sources:
             step()
