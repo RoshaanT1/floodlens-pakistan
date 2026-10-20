@@ -4,8 +4,8 @@
     .venv/bin/python -m flows.hourly serve   # long-running: a run at 5 past every hour
 
 Each run:
-  1. fetches what is new: archived forecasts (Previous Runs backfill, inside a rolling
-     24 h call budget read from the manifest), the live forecast (at most every 6 h) and
+  1. fetches what is new: archived forecasts (Previous Runs backfill, inside a
+     per-UTC-day call budget read from the manifest), the live forecast (at most every 6 h) and
      IMERG Late days (skipped, with a logged reason, while .env has no Earthdata login);
   2. rebuilds every table (`make data`) into a scratch copy of the database and swaps it
      in only if the build passes, so a failed run never touches the live database;
@@ -27,7 +27,7 @@ from prefect import flow, get_run_logger, task
 from src import forecasts, imerg
 from src.config import DB_PATH, FORECAST_START, ROOT
 
-CALLS_PER_DAY = 9000       # Open-Meteo free tier is 10,000; keep headroom for retries
+CALLS_PER_DAY = 9000       # per UTC day; Open-Meteo free tier is 10,000; keep headroom for retries
 CALLS_PER_RUN = 2000       # ~25 min of paced requests, so a run ends well inside its hour
 IMERG_DAYS_PER_RUN = 300   # ~1 h of downloads once a login exists; resumes next run
 STATUS = ROOT / "data" / "flow_status.json"
@@ -40,10 +40,10 @@ def _yesterday() -> date:
 @task(retries=2, retry_delay_seconds=120)
 def fetch_archived_forecasts() -> str:
     log = get_run_logger()
-    spent = forecasts.calls_spent(24)
+    spent = forecasts.calls_spent()
     budget = min(CALLS_PER_RUN, CALLS_PER_DAY - spent)
     if budget < 150:  # one batch costs ~130
-        msg = f"skipped: {spent:.0f} calls used in the last 24 h (cap {CALLS_PER_DAY})"
+        msg = f"skipped: {spent:.0f} calls used today (UTC; cap {CALLS_PER_DAY})"
         log.info(msg)
         return msg
     try:
@@ -51,12 +51,12 @@ def fetch_archived_forecasts() -> str:
     except forecasts.DailyLimitReached as e:
         log.warning(str(e))
         return f"stopped: {e}"
-    return f"ok: {forecasts.calls_spent(24) - spent:.0f} calls this run"
+    return f"ok: {forecasts.calls_spent() - spent:.0f} calls this run"
 
 
 @task(retries=2, retry_delay_seconds=120)
 def fetch_live_forecast() -> str:
-    if forecasts.calls_spent(24) > CALLS_PER_DAY:
+    if forecasts.calls_spent() > CALLS_PER_DAY:
         return "skipped: daily call budget used"
     try:
         return "ok: new file" if forecasts.fetch_live() else "ok: fresh enough"

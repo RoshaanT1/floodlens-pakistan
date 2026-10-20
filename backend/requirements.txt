@@ -20,3 +20,4 @@ scikit-learn>=1.5
 joblib>=1.4
 openpyxl>=3.1
 pypdf>=4
+sqlalchemy[asyncio]>=2.0,<2.1  # 2.1 breaks the prefect 3.8.8 scheduler (bulk DML error)

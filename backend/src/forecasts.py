@@ -72,10 +72,15 @@ def query_weight(query: str) -> float:
     return n_loc * max(1.0, n_vars / 10) * max(1.0, n_days / 14)
 
 
-def calls_spent(hours: float = 24, now: datetime | None = None) -> float:
-    """Calls charged to this machine in the last `hours`, from the manifest (all Open-Meteo sources)."""
+def calls_spent(hours: float | None = None, now: datetime | None = None) -> float:
+    """Calls charged to this machine, from the manifest (all forecast sources).
+
+    hours=None counts the current UTC calendar day (the "per day" in the free-tier terms);
+    a number counts a rolling window instead.
+    """
     now = now or datetime.now(timezone.utc)
-    since = (now - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0) if hours is None else now - timedelta(hours=hours)
+    since = start.strftime("%Y-%m-%dT%H:%M:%SZ")
     return sum(query_weight(r["query"]) for r in manifest.read_manifest()
                if r["source"] in (SOURCE, LIVE_SOURCE) and r["fetched_at_utc"] >= since)
 
