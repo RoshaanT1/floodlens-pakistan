@@ -47,7 +47,7 @@ access fails", and access works for the team; only this machine lacks the login.
 | **P4** | `make export` adds Model A probabilities (24/48/72 h, each with its row_id and the label "validation-stage model") once `risk_live` exists; new **Live data** page (all 160 districts, real data only); sample pages and placeholder accuracy figures are now labelled as such | 4a1b841, 2c2bb60, 15075ca |
 | **A5/A6/E2** | `src/analysis_a.py report` (groups, weakest group, Buner 14–15 Aug 2025, NDMA comparison) is written and tested on fixtures. NDMA half of E2 done: `docs/ndma_districts_2025.csv` (86 sitreps; 125 districts named) | 8c679d8, 91f369f |
 | **R1** | `src/documents.py`: 86 NDMA monsoon 2025 sitreps, 55 advisories (Jun–Oct 2025), listing pages, all with manifest rows | 7d7f46c |
-| **R2** | `src/doc_index.py`: 1,516 sections from 128 documents, multilingual-e5-small + FAISS, in a separate `.venv-insight` | 7d7f46c |
+| **R2** | `src/doc_index.py`: 1,708 sections from 141 documents (86 sitreps, 55 advisories), multilingual-e5-small + FAISS, in a separate `.venv-insight` | 7d7f46c |
 | **B1–B3** (start) | `src/spi.py`: 55 weekly annex xlsx (30 Apr 2025 to 15 Oct 2026), parsed to 47,685 rows; all 55 weeks complete (17 × 51); 337 rows flagged, none filled | 09b6ece, a70b548, 4115c13 |
 | dedup | `docs/dedup_notes.md` compares the two D4–D6/Q1 implementations; nothing deleted | af8ca52 |
 
