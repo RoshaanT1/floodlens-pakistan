@@ -1,0 +1,22 @@
+# secrets
+.env
+.netrc
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# data: raw files are shared outside git; manifest.csv stays tracked
+data/raw/*
+!data/raw/.gitkeep
+data/clean/*
+!data/clean/.gitkeep
+data/gold/*
+!data/gold/.gitkeep
+*.duckdb
+*.duckdb.wal
+*.nc4
+*.HDF5
+*.zip
