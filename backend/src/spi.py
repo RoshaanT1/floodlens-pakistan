@@ -34,7 +34,7 @@ from src.config import CLEAN, DB_PATH, ROOT
 SOURCE = "pbs_spi_annex"
 ARCHIVED = "pbs_spi_annex_archived"
 CDX = ("https://web.archive.org/cdx/search/cdx?url=pbs.gov.pk/sites/default/files/price_statistics/weekly_spi/*"
-       "&output=json&fl=timestamp,original&filter=statuscode:200&filter=mimetype:application/pdf&collapse=urlkey")
+       "&output=json&fl=timestamp,original,length&filter=statuscode:200&filter=mimetype:application/pdf")
 ARCHIVE_WINDOW = (date(2023, 1, 1), date(2025, 4, 29))  # newer weeks come from PBS's own xlsx
 LISTING = "pbs_media_listing"
 MEDIA_API = "https://www.pbs.gov.pk/wp-json/wp/v2/media?search=annex&per_page=100&page={page}&_fields=id,date,source_url"
@@ -88,14 +88,21 @@ def fetch_archived() -> None:
     r.raise_for_status()
     stamp = datetime.utcnow().strftime("%Y%m%dT%H%M")
     manifest.save_raw(r.content, LISTING, CDX, f"wayback_cdx_weekly_spi_{stamp}.json")
-    by_week: dict[date, tuple[str, str]] = {}
-    for ts, orig in json.loads(r.content)[1:]:
+    # some captures are truncated at 1 MiB, so keep the largest capture of each week's file
+    by_week: dict[date, tuple[int, str, str]] = {}
+    for ts, orig, length in json.loads(r.content)[1:]:
         week = _file_week(orig)
         if "annex" in unquote(orig).lower() and week and ARCHIVE_WINDOW[0] <= week <= ARCHIVE_WINDOW[1]:
-            by_week.setdefault(week, (ts, orig))  # one file per week; CDX order is stable
+            cand = (int(length) if length.isdigit() else 0, ts, orig)
+            if week not in by_week or cand[0] > by_week[week][0]:
+                by_week[week] = cand
     done = manifest.fetched_queries(ARCHIVED)
+    have_ok = {r["path"].rsplit("/", 1)[-1][:10] for r in manifest.read_manifest()
+               if r["source"] == ARCHIVED and (ROOT / r["path"]).read_bytes().rstrip().endswith(b"%%EOF")}
     new = 0
-    for week, (ts, orig) in sorted(by_week.items()):
+    for week, (_, ts, orig) in sorted(by_week.items()):
+        if week.isoformat() in have_ok:
+            continue
         url = f"https://web.archive.org/web/{ts}id_/{orig}"
         if url in done:
             continue
@@ -106,10 +113,10 @@ def fetch_archived() -> None:
         except requests.RequestException as e:
             print(f"  {week}: {e}; logged, moving on")
             continue
-        if not r.content.startswith(b"%PDF"):
-            print(f"  {week}: not a PDF; skipped")
+        if not r.content.startswith(b"%PDF") or not r.content.rstrip().endswith(b"%%EOF"):
+            print(f"  {week}: not a complete PDF (truncated capture?); skipped")
             continue
-        manifest.save_raw(r.content, ARCHIVED, url, f"{week.isoformat()}_{unquote(orig.rsplit('/', 1)[-1])}")
+        manifest.save_raw(r.content, ARCHIVED, url, f"{week.isoformat()}_{ts}_{unquote(orig.rsplit('/', 1)[-1])}")
         new += 1
     print(f"spi archived: {len(by_week)} weeks listed, {new} new files")
 
@@ -198,6 +205,9 @@ def _parsed(r: dict) -> pd.DataFrame:
     cache = CLEAN / "spi_parsed" / f"{r['sha256']}.parquet"
     if cache.exists():
         return pd.read_parquet(cache)
+    if r["source"] == ARCHIVED and not (ROOT / r["path"]).read_bytes().rstrip().endswith(b"%%EOF"):
+        print(f"  skip truncated archive capture {r['path']} (kept as fetched; a complete capture is used)")
+        return pd.DataFrame()
     parse = parse_annex_pdf if r["source"] == ARCHIVED else parse_annex
     df = parse(ROOT / r["path"])
     cache.parent.mkdir(parents=True, exist_ok=True)

@@ -31,6 +31,9 @@ def save_raw(content: bytes, source: str, query: str, filename: str,
              manifest: Path = MANIFEST, raw_dir: Path = RAW) -> Path:
     """Write `content` untouched and append its manifest row. Returns the file path."""
     path = raw_dir / source / filename
+    if path.exists() and sha256_file(path) != sha256_bytes(content):
+        # raw files are never edited: a new version needs a new name
+        raise FileExistsError(f"{path} exists with different content; choose a new filename")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(content)
 
