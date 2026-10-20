@@ -4,8 +4,12 @@
     python -m src.spi build   # -> DuckDB `spi_price` (long) and `spi_week_quality`
 
 B1: PBS's WordPress media API lists the weekly annex files. As of 21 Oct 2026 it has the
-xlsx annex only from the week ending 30 Apr 2025. Older weeks (Jan 2023 onward, as declared)
-are not in that listing under "annex" and still need finding; see docs/sources.md.
+xlsx annex only from the week ending 30 Apr 2025. Older weeks (Jan 2023 to Apr 2025) were on
+PBS's previous site (pbs.gov.pk/sites/default/files/price_statistics/weekly_spi/); those PDF
+annexes are fetched from the Internet Archive's unmodified copies (`id_` URLs), and the
+manifest query records the archive URL, so the provenance is explicit.
+
+    python -m src.spi fetch-archived   # Jan 2023 to Apr 2025 PDFs via the Wayback Machine
 B2: the xlsx "Appendix-A" sheet holds three blocks of 51 items, 17 cities, each city with
 MIN / AVG / MAX columns, for the week's "PRICES ON DD-MM-YYYY" date.
 B3: checks only flag, never fill or drop prices:
@@ -17,7 +21,8 @@ import json
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import date, datetime
+from urllib.parse import unquote
 
 import duckdb
 import pandas as pd
@@ -27,6 +32,10 @@ from src import manifest
 from src.config import DB_PATH, ROOT
 
 SOURCE = "pbs_spi_annex"
+ARCHIVED = "pbs_spi_annex_archived"
+CDX = ("https://web.archive.org/cdx/search/cdx?url=pbs.gov.pk/sites/default/files/price_statistics/weekly_spi/*"
+       "&output=json&fl=timestamp,original&filter=statuscode:200&filter=mimetype:application/pdf&collapse=urlkey")
+ARCHIVE_WINDOW = (date(2023, 1, 1), date(2025, 4, 29))  # newer weeks come from PBS's own xlsx
 LISTING = "pbs_media_listing"
 MEDIA_API = "https://www.pbs.gov.pk/wp-json/wp/v2/media?search=annex&per_page=100&page={page}&_fields=id,date,source_url"
 UA = {"User-Agent": "FloodLens-Pakistan research (HackInsight 2026; contact via GitHub RoshaanT1)"}
@@ -63,6 +72,75 @@ def fetch() -> None:
         manifest.save_raw(r.content, SOURCE, url, url.rsplit("/", 1)[-1])
         new += 1
     print(f"spi: {len(set(urls))} weekly annex files listed, {new} new")
+
+
+def _file_week(url: str) -> date | None:
+    m = re.search(r"(\d{2})[._-]?(\d{2})[._-]?(20\d{2})", unquote(url.rsplit("/", 1)[-1]))
+    try:
+        return date(int(m[3]), int(m[2]), int(m[1])) if m else None
+    except ValueError:
+        return None
+
+
+def fetch_archived() -> None:
+    time.sleep(DELAY_S)
+    r = requests.get(CDX, headers=UA, timeout=180)
+    r.raise_for_status()
+    stamp = datetime.utcnow().strftime("%Y%m%dT%H%M")
+    manifest.save_raw(r.content, LISTING, CDX, f"wayback_cdx_weekly_spi_{stamp}.json")
+    by_week: dict[date, tuple[str, str]] = {}
+    for ts, orig in json.loads(r.content)[1:]:
+        week = _file_week(orig)
+        if "annex" in unquote(orig).lower() and week and ARCHIVE_WINDOW[0] <= week <= ARCHIVE_WINDOW[1]:
+            by_week.setdefault(week, (ts, orig))  # one file per week; CDX order is stable
+    done = manifest.fetched_queries(ARCHIVED)
+    new = 0
+    for week, (ts, orig) in sorted(by_week.items()):
+        url = f"https://web.archive.org/web/{ts}id_/{orig}"
+        if url in done:
+            continue
+        time.sleep(DELAY_S)
+        try:
+            r = requests.get(url, headers=UA, timeout=300)
+            r.raise_for_status()
+        except requests.RequestException as e:
+            print(f"  {week}: {e}; logged, moving on")
+            continue
+        if not r.content.startswith(b"%PDF"):
+            print(f"  {week}: not a PDF; skipped")
+            continue
+        manifest.save_raw(r.content, ARCHIVED, url, f"{week.isoformat()}_{unquote(orig.rsplit('/', 1)[-1])}")
+        new += 1
+    print(f"spi archived: {len(by_week)} weeks listed, {new} new files")
+
+
+def parse_annex_pdf(path) -> pd.DataFrame:
+    """Old-site PDF annex: pages 1-3 hold the same three city blocks as the xlsx Appendix-A."""
+    import pdfplumber
+
+    rows = []
+    with pdfplumber.open(path) as pdf:
+        for page in pdf.pages[:3]:
+            text = page.extract_text() or ""
+            m = re.search(r"PRICES ON (\d{2}-\d{2}-\d{4})", text)
+            tables = page.extract_tables()
+            if not m or len(tables) < 2:
+                continue
+            week_end = datetime.strptime(m.group(1), "%d-%m-%Y").date()
+            header = tables[0][0]
+            cities = [(c, re.sub(r"\s*\(\d+\)\s*$", "", h).strip()) for c, h in enumerate(header)
+                      if h and re.search(r"\(\d+\)\s*$", h)]
+            for r in tables[1]:
+                if not r or not str(r[0]).strip().isdigit():
+                    continue
+                for c, city in cities:
+                    rows.append({"week_end": week_end, "city": city, "item_no": int(r[0]),
+                                 "item": str(r[1]).strip(), "unit": str(r[2]).strip(),
+                                 "min_pkr": r[c], "avg_pkr": r[c + 1], "max_pkr": r[c + 2]})
+    out = pd.DataFrame(rows)
+    for col in ("min_pkr", "avg_pkr", "max_pkr"):
+        out[col] = pd.to_numeric(out[col].astype(str).str.replace(",", ""), errors="coerce")
+    return out
 
 
 def parse_annex(path) -> pd.DataFrame:
@@ -116,13 +194,14 @@ def check(prices: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def build(db_path=DB_PATH) -> int:
-    rows = [r for r in manifest.read_manifest() if r["source"] == SOURCE]
+    rows = [r for r in manifest.read_manifest() if r["source"] in (SOURCE, ARCHIVED)]
     if not rows:
         raise SystemExit("no SPI files in manifest; run `python -m src.spi fetch`")
     frames = []
     for r in rows:
         try:
-            frames.append(parse_annex(ROOT / r["path"]))
+            parse = parse_annex_pdf if r["source"] == ARCHIVED else parse_annex
+            frames.append(parse(ROOT / r["path"]))
         except Exception as e:  # a layout we cannot read is logged, never guessed
             print(f"  could not parse {r['path']}: {e}")
     prices, weeks = check(pd.concat(frames).drop_duplicates(["week_end", "city", "item_no"], keep="last"))
@@ -137,4 +216,4 @@ def build(db_path=DB_PATH) -> int:
 
 
 if __name__ == "__main__":
-    {"fetch": fetch, "build": build}[sys.argv[1]]()
+    {"fetch": fetch, "fetch-archived": fetch_archived, "build": build}[sys.argv[1]]()
