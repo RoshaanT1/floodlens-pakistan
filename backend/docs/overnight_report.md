@@ -62,8 +62,10 @@ See the "Flow log" at the end for the run-by-run record.
   (Wed). Tue 16:00 to Wed 01:28 has no runs.
 - Each run spends ≤2,000 Open-Meteo calls on the backfill (~28 min of paced requests), then
   rebuilds (~1 min). Once the day's 9,000 cap is used, runs take ~2 minutes.
-- **Backfill reach:** about 17 months of history (Jul 2024 to about Nov 2025) by Wed
-  afternoon; 2026 is fetched afterwards. Validation ends 31 Dec 2025.
+- **Backfill reach:** about 6.7k calls were used on UTC day 20 Oct, so the 03:05 run spends 2,000
+  and the 04:05 run ~300. From 05:05 PKT (a new UTC day) each run spends 2,000 until 9,000.
+  At ~530 calls a month, the remaining Mar 2025 to Oct 2026 (~10.6k calls) should finish
+  around 09:30 PKT on Wednesday. Validation (to Dec 2025) is covered by about 07:00 PKT.
 
 ### Start and stop
 
@@ -165,3 +167,5 @@ python3 -m venv .venv-insight && .venv-insight/bin/pip install -r requirements-i
 | Run | Started (PKT) | State | Duration | Notes |
 | --- | --- | --- | --- | --- |
 | capable-puma (manual) | 21 Oct 01:28 | Completed | 28.5 min | 1,976 calls; forecasts now to 31 Oct 2024; IMERG skipped (no login) |
+| (02:05 slot, before fix) | – | – | – | scheduler broken by SQLAlchemy 2.1; fixed and server restarted at 02:02, so the 02:05 slot was kept |
+| outrageous-owl (scheduled) | 21 Oct 02:05 | Completed | 28.5 min | 1,950 calls; forecasts now to 28 Feb 2025 |
