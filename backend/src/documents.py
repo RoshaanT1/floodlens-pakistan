@@ -60,7 +60,8 @@ def parse_cards(page_html: str) -> list[dict]:
 
 def _save_listing(url: str) -> list[dict]:
     content = _get(url).content
-    manifest.save_raw(content, LISTING, url, re.sub(r"[^A-Za-z0-9]+", "_", url.split("gov.pk/")[1]) + ".html")
+    stamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S")  # listings change; raw files never do
+    manifest.save_raw(content, LISTING, url, re.sub(r"[^A-Za-z0-9]+", "_", url.split("gov.pk/")[1]) + f"_{stamp}.html")
     return parse_cards(content.decode("utf-8", "replace"))
 
 
@@ -103,6 +104,26 @@ def fetch() -> None:
     print(f"documents: {n} new files")
 
 
+RECENT_SITREP_CATS = (2, 3)  # Special Sitreps 2026, Monsoon Sitreps 2026
+RECENT_DAYS = 60
+
+
+def fetch_recent(today: date | None = None) -> int:
+    """Daily top-up for the flow: newest NDMA advisories and 2026 sitreps (first pages only)."""
+    today = today or date.today()
+    done = {q for s in ("ndma_sitrep", "ndma_advisory") for q in manifest.fetched_queries(s)}
+    n = 0
+    for cat in RECENT_SITREP_CATS:
+        for c in _save_listing(f"{NDMA}/sitreps?cat_id={cat}&page=1"):
+            n += _save_pdf(c["url"], "ndma_sitrep", done)
+    for page in (1, 2):
+        cards = _save_listing(ADVISORY_LIST.format(page=page))
+        n += sum(_save_pdf(c["url"], "ndma_advisory", done) for c in cards
+                 if c["published"] and (today - c["published"]).days <= RECENT_DAYS)
+    print(f"documents (recent): {n} new files")
+    return n
+
+
 def build(db_path=DB_PATH) -> int:
     """Catalogue of stored documents, titles and dates taken from the newest listing pages."""
     meta = {}
@@ -125,4 +146,4 @@ def build(db_path=DB_PATH) -> int:
 
 
 if __name__ == "__main__":
-    {"fetch": fetch, "build": build}[sys.argv[1]]()
+    {"fetch": fetch, "recent": fetch_recent, "build": build}[sys.argv[1]]()
