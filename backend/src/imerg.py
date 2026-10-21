@@ -35,6 +35,12 @@ VARIABLES = ["precipitation", "precipitation_cnt"]
 FILL = -9999.9
 URS_HOST = "urs.earthdata.nasa.gov"
 NETCDF_MAGIC = (b"\x89HDF", b"CDF")  # netCDF-4 (HDF5) or classic
+# Earthdata Cloud copy of the same collection, with a server-side-subsetting OPeNDAP (DAP4).
+# Used by default since 21 Oct 2026, when gpm1 stopped answering this machine; same bytes
+# per pixel (checked on 14 Aug 2025: identical grid and maximum).
+CLOUD_COLLECTION = "C2723754859-GES_DISC"
+CMR_GRANULES = "https://cmr.earthdata.nasa.gov/search/granules.json"
+CLOUD_DAP = "https://opendap.earthdata.nasa.gov/collections/{cid}/granules/GPM_3IMERGDL.07%3A{name}"
 
 
 def grid_slices(bbox=PAK_BBOX) -> tuple[tuple[int, int], tuple[int, int]]:
@@ -84,6 +90,41 @@ def session() -> EarthdataSession:
     return s
 
 
+def list_month_cmr(year: int, month: int) -> dict[date, str]:
+    """{day: granule file name} for one month, from NASA's public CMR search (no login)."""
+    start = date(year, month, 1)
+    end = (start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    out, page = {}, 1
+    while True:
+        for attempt in range(1, 6):
+            try:
+                r = requests.get(CMR_GRANULES, timeout=120, params={
+                    "collection_concept_id": CLOUD_COLLECTION, "page_size": 100, "page_num": page,
+                    "temporal": f"{start}T00:00:00Z,{end - timedelta(days=1)}T23:59:59Z"})
+                r.raise_for_status()
+                break
+            except requests.RequestException:
+                if attempt == 5:
+                    raise
+                time.sleep(10 * attempt)
+        entries = r.json()["feed"]["entry"]
+        for g in entries:
+            name = g["title"].split(":", 1)[-1]
+            m = re.search(r"3IMERG\.(\d{8})-", name)
+            out[datetime.strptime(m.group(1), "%Y%m%d").date()] = name
+        if len(entries) < 100:
+            return out
+        page += 1
+
+
+def build_cloud_query(filename: str) -> str:
+    (i0, i1), (j0, j1) = grid_slices()
+    ce = ";".join([f"/{v}[0:1:0][{i0}:1:{i1}][{j0}:1:{j1}]" for v in VARIABLES]
+                  + [f"/lon[{i0}:1:{i1}]", f"/lat[{j0}:1:{j1}]"])
+    from urllib.parse import quote
+    return CLOUD_DAP.format(cid=CLOUD_COLLECTION, name=filename) + ".dap.nc4?dap4.ce=" + quote(ce, safe="/:;")
+
+
 def list_month(s: requests.Session, year: int, month: int) -> dict[date, str]:
     """{day: filename} for one month, from the public directory listing."""
     for attempt in range(1, 6):  # the listing host drops the odd TLS handshake
@@ -121,15 +162,27 @@ def download(s: requests.Session, query: str, tries: int = 5) -> bytes:
     raise AssertionError("unreachable")
 
 
-def fetch(start: date, end: date, workers: int, max_days: int | None = None) -> None:
+def fetched_days() -> set[date]:
+    """Days already stored, whichever endpoint served them."""
+    days = set()
+    for r in manifest.read_manifest():
+        if r["source"] == SOURCE:
+            m = re.search(r"3IMERG\.(\d{8})-", r["path"])
+            days.add(datetime.strptime(m.group(1), "%Y%m%d").date())
+    return days
+
+
+def fetch(start: date, end: date, workers: int, max_days: int | None = None, endpoint: str = "cloud") -> None:
     s = session()
-    done = manifest.fetched_queries(SOURCE)
+    done = fetched_days()
     todo = []
     month = start.replace(day=1)
     while month <= end:
-        for day, filename in sorted(list_month(s, month.year, month.month).items()):
-            q = build_query(filename, day)
-            if start <= day <= end and q not in done:
+        listing = (list_month_cmr(month.year, month.month) if endpoint == "cloud"
+                   else list_month(s, month.year, month.month))
+        for day, filename in sorted(listing.items()):
+            q = build_cloud_query(filename) if endpoint == "cloud" else build_query(filename, day)
+            if start <= day <= end and day not in done:
                 todo.append((day, filename, q))
         month = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
     if max_days is not None and len(todo) > max_days:
@@ -175,5 +228,6 @@ if __name__ == "__main__":
     p.add_argument("--end", type=date.fromisoformat,
                    default=datetime.now(timezone.utc).date() - timedelta(days=1))
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--endpoint", choices=["cloud", "gesdisc"], default="cloud")
     a = p.parse_args()
-    fetch(a.start, a.end, a.workers)
+    fetch(a.start, a.end, a.workers, endpoint=a.endpoint)
