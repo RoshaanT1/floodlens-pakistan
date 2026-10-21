@@ -47,7 +47,7 @@ BOXES = [
     (7, 52.4, 147.0, 298.1, 163.0, "Archived forecasts (Open-Meteo, CC BY 4.0, ECMWF/NOAA/DWD) for honest lead time; NASA IMERG (open data) as independent truth."),
     (7, 304.9, 147.0, 550.6, 163.0, "NASA's gpm1 server blocked our IP and daily files are 33 MB; we switched to NASA's cloud OPeNDAP, cropped to ~74 KB/day."),
     (7, 52.4, 174.0, 298.1, 190.0, "A price PBS did not collect is unknown; filling it invents data, so 1,279 prices stay NULL and flagged."),
-    (7, 305.6, 174.0, 551.3, 190.0, "Test set: climatology 0.0192 vs model 0.0177 Brier at 24 h (~8% better, paired interval excludes zero; holds in monsoon)."),
+    (7, 305.6, 174.0, 551.3, 190.0, "Test set: climatology 0.0192 vs model 0.0177 Brier at 24 h (~7% better, paired interval excludes zero; holds in monsoon)."),
     (7, 52.4, 202.0, 298.1, 217.9, "Azad Kashmir (smallest gain); single-valley cloudbursts like Buner 15 Aug 2025 are missed by the satellite labels."),
     (7, 304.9, 202.0, 550.6, 217.9, "No model writes numbers: code inserts them from gold tables with row ids; text is quoted with section ids."),
     (7, 52.4, 235.6, 298.1, 251.6, "PDMA planners use it; PDMAs or donors pay from preparedness / anticipatory-action budgets; it runs on one small server."),

@@ -74,6 +74,8 @@ def test_every_line_is_a_template_a_quote_or_a_table_fact():
     a = insight.answer("How many people died in Buner flash floods in August 2025?")
     templates = set(insight.TEXT["en"].values())
     for line in a.text.splitlines():
+        if line == a.lead:  # the lead is a template filled from the facts below it
+            continue
         assert line in templates or SECTION.search(line) or re.search(r"\[[^\]]+\]$", line), line
 
 
@@ -82,3 +84,24 @@ def test_every_line_is_a_template_a_quote_or_a_table_fact():
 def test_emergencies_point_to_1122_and_ndma(question, lang):
     a = insight.answer(question, lang=lang)
     assert a.emergency and "1122" in a.text.splitlines()[0]
+
+
+def test_greetings_get_an_introduction_not_a_fact():
+    a = insight.answer("hello")
+    assert a.known and a.lead == insight.TEXT["en"]["hello"] and not a.citations and not a.row_ids
+
+
+def test_forecast_questions_use_live_rows_not_old_advisories():
+    a = insight.answer("When will it rain in Karachi?")
+    assert "Karachi" in a.lead and not a.citations
+    assert a.row_ids and all(r.startswith("PK721_") for r in a.row_ids)
+
+
+def test_model_question_cites_the_test_results_file():
+    a = insight.answer("How accurate is your model?")
+    assert a.row_ids == ["docs/model_a_test.json"] and "0.0177" in a.lead
+
+
+def test_short_district_question_still_finds_its_reports():
+    a = insight.answer("how many died in buner in august 2025")
+    assert a.known and a.citations and "Buner" in a.lead

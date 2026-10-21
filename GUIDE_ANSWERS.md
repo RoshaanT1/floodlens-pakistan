@@ -189,7 +189,7 @@ No LLM writes numbers: the wording is fixed templates, the numbers come from tab
 5. **Why flag instead of fill?** A price PBS did not collect is unknown; filling it would invent data, so 1,279
    prices stay NULL and flagged.
 6. **Baseline and margin?** On the test set (Jan to Sep 2026, run once): climatology 0.0192 vs model 0.0177
-   Brier at 24 h, about 8% better, paired interval excludes zero, and it holds in monsoon months.
+   Brier at 24 h, about 7% better, paired interval excludes zero, and it holds in monsoon months.
 7. **Where is the model worst?** Azad Kashmir has the smallest gain, and single-valley cloudbursts like Buner on
    15 Aug 2025 are missed by the satellite labels themselves.
 8. **How does the Insight Agent never invent a number?** No model writes numbers: code inserts them from gold tables

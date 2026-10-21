@@ -1,21 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Bot, Database, FileText, Loader2, Siren, User } from "lucide-react";
+import { ArrowUp, ChevronRight, Database, FileText, Loader2, Siren, User } from "lucide-react";
+import { PakistanMapIcon } from "@/components/icons/PakistanMapIcon";
 import TopBar from "@/components/layout/TopBar";
 import { backendStatus } from "@/data/backend";
 import { cn } from "@/lib/utils";
 
-type Answer = { text: string; citations: string[]; row_ids: string[]; known: boolean; emergency: boolean };
+type Answer = { text: string; citations: string[]; row_ids: string[]; known: boolean; emergency: boolean; lead?: string };
 type Message = { role: "user"; text: string } | { role: "assistant"; answer?: Answer; error?: boolean; pending?: boolean };
 type Lang = "en" | "ur";
 
 const SUGGESTIONS: Record<Lang, string[]> = {
   en: [
     "What's happening in Pakistan right now?",
+    "When will it rain in Karachi?",
     "Where will it rain in the next 3 days?",
     "Which food prices jumped this week?",
     "How many people died in Buner flash floods in August 2025?",
-    "Flood warning for river Sutlej",
-    "Buner rain forecast",
+    "How accurate is your model?",
   ],
   ur: ["آج کی صورتحال کیا ہے؟", "اگلے تین دنوں میں بارش کہاں ہوگی؟", "دریائے چناب میں سیلاب کی وارننگ", "Buner rain forecast"],
 };
@@ -28,7 +29,8 @@ const askUrl = () => (backendStatus?.insight_url ? `${backendStatus.insight_url}
 function AnswerLine({ line }: { line: string }) {
   const tag = line.match(/\[([^\]]+)\]\s*$/);
   const body = tag ? line.slice(0, tag.index).trim() : line;
-  if (!line.startsWith("- ")) return <p className="text-sm font-medium" dir="auto">{line}</p>;
+  if (!line.startsWith("- "))
+    return <p className="pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground" dir="auto">{line}</p>;
   const text = body.slice(2);
   const quote = text.match(/^"(.*)"\s*\((.*)\)$/s);
   if (quote) {
@@ -56,7 +58,11 @@ function AnswerLine({ line }: { line: string }) {
             part
           ),
         )}
-        {tag && <code className="ml-1.5 rounded bg-muted px-1 py-[1px] text-[10px] text-muted-foreground">row {tag[1]}</code>}
+        {tag && (
+          <code className="ml-1.5 rounded bg-muted px-1 py-[1px] text-[10px] text-muted-foreground">
+            {tag[1].endsWith(".json") ? "file" : "row"} {tag[1]}
+          </code>
+        )}
       </span>
     </div>
   );
@@ -66,7 +72,7 @@ function AssistantBubble({ m }: { m: Extract<Message, { role: "assistant" }> }) 
   if (m.pending) {
     return (
       <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Searching documents and tables…
+        <Loader2 className="h-4 w-4 animate-spin" /> Checking the live data and NDMA reports…
       </p>
     );
   }
@@ -78,22 +84,44 @@ function AssistantBubble({ m }: { m: Extract<Message, { role: "assistant" }> }) 
       </p>
     );
   }
-  const lines = m.answer.text.split("\n").filter(Boolean);
+  const a = m.answer;
+  const lines = a.text.split("\n").filter(Boolean);
   const disclaimer = lines.pop();
+  const emergency = a.emergency ? lines.shift() : undefined;
+  if (a.lead && lines[0] === a.lead) lines.shift();
+  // the evidence: quotes with section ids and table facts with row ids (none for greetings or "I don't know")
+  const evidence = a.known ? lines : [];
+  const sources = a.citations.length + a.row_ids.length;
   return (
-    <div className="space-y-2">
-      {lines.map((line, i) =>
-        m.answer!.emergency && i === 0 ? (
-          <p key={i} className="flex gap-2 rounded-md border border-red-500/40 bg-red-500/10 p-2 text-sm text-red-700 dark:text-red-300" dir="auto">
-            <Siren className="mt-0.5 h-4 w-4 shrink-0" />
-            {line}
-          </p>
-        ) : (
-          <AnswerLine key={i} line={line} />
-        ),
+    <div className="space-y-2.5">
+      {emergency && (
+        <p className="flex gap-2 rounded-md border border-red-500/40 bg-red-500/10 p-2 text-sm text-red-700 dark:text-red-300" dir="auto">
+          <Siren className="mt-0.5 h-4 w-4 shrink-0" />
+          {emergency}
+        </p>
       )}
-      <p className="pt-1 text-xs text-muted-foreground" dir="auto">
-        {m.answer.citations.length} document sections · {m.answer.row_ids.length} table rows cited · {disclaimer}
+      {a.lead && (
+        <p className="text-[15px] leading-relaxed" dir="auto">
+          {a.lead}
+        </p>
+      )}
+      {evidence.length > 0 && (
+        <details className="group rounded-lg border border-border bg-muted/20" open={a.citations.length > 0 || !a.lead}>
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground">
+            <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+            Evidence · {a.citations.length > 0 && `${a.citations.length} NDMA passages`}
+            {a.citations.length > 0 && a.row_ids.length > 0 && " · "}
+            {a.row_ids.length > 0 && `${a.row_ids.length} data rows`}
+          </summary>
+          <div className="space-y-2 border-t border-border px-2.5 py-2">
+            {evidence.map((line, i) => (
+              <AnswerLine key={i} line={line} />
+            ))}
+          </div>
+        </details>
+      )}
+      <p className="text-[11px] text-muted-foreground" dir="auto">
+        {sources > 0 ? `Every number above is traceable to its source. ${disclaimer}` : disclaimer}
       </p>
     </div>
   );
@@ -166,9 +194,13 @@ export default function Ask() {
         <div className="mx-auto w-full max-w-[860px] space-y-4 px-4 py-5">
           {messages.length === 0 && (
             <div className="py-6 text-center">
-              <Bot className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-lg font-semibold">What would you like to know?</p>
-              <p className="text-sm text-muted-foreground">Live rain risk, forecasts and food prices, and NDMA reports.</p>
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <PakistanMapIcon className="h-7 w-7" />
+              </span>
+              <p className="mt-3 text-lg font-semibold">Salaam! What would you like to know?</p>
+              <p className="text-sm text-muted-foreground">
+                I keep an eye on rain risk in 160 districts, food prices in 17 cities and every NDMA report.
+              </p>
               <div className="mx-auto mt-4 grid max-w-[640px] gap-2 sm:grid-cols-2">
                 {SUGGESTIONS[lang].map((s) => (
                   <button
@@ -195,7 +227,9 @@ export default function Ask() {
               </div>
             ) : (
               <div key={i} className="flex gap-2">
-                <Bot className="mt-1.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <PakistanMapIcon className="h-3.5 w-3.5" />
+                </span>
                 <div className="min-w-0 flex-1 rounded-2xl rounded-tl-sm border border-border bg-card px-3.5 py-3">
                   <AssistantBubble m={m} />
                 </div>
