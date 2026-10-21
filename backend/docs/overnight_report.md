@@ -191,3 +191,5 @@ python3 -m venv .venv-insight && .venv-insight/bin/pip install -r requirements-i
 | outrageous-owl (scheduled) | 21 Oct 02:05 | Completed | 28.5 min | 1,950 calls; forecasts now to 28 Feb 2025 |
 | functional-wapiti (scheduled) | 21 Oct 03:05 | Completed | 27.7 min | 1,946 calls; forecasts now to 30 Jun 2025 (training period complete) |
 | fascinating-oyster (scheduled) | 21 Oct 04:05 | Completed | 4.2 min | 257 calls (UTC day 20 Oct budget reached 8,877 of 9,000) |
+| (05:05 slot) | – | – | – | laptop asleep 04:33 to 06:10 |
+| invaluable-stallion (05:05 slot, ran late) | 21 Oct 06:10 | Completed | 34 min | 1,971 calls; forecasts now to 31 Oct 2025 |
