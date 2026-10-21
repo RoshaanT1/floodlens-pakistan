@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FloodLens Pakistan: summary</title>
+<style>
+  @page { size: A4; margin: 12mm 13mm; }
+  body { font: 9.6pt/1.38 "Helvetica Neue", Arial, sans-serif; color: #1a1d21; margin: 0; }
+  h1 { font-size: 17pt; margin: 0 0 2px; }
+  .sub { color: #555; margin: 0 0 8px; }
+  h2 { font-size: 10.5pt; margin: 9px 0 3px; border-bottom: 1px solid #ccd; padding-bottom: 1px; }
+  p, ul { margin: 0 0 5px; } ul { padding-left: 15px; } li { margin: 0 0 2px; }
+  table { border-collapse: collapse; width: 100%; font-size: 9pt; margin: 3px 0 5px; }
+  th, td { border: 1px solid #ccd; padding: 2px 5px; text-align: left; vertical-align: top; }
+  th { background: #f0f2f6; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  .pending { color: #9a5b00; font-weight: 600; }
+  .small { font-size: 8.2pt; color: #555; }
+</style>
+</head>
+<body>
+<h1>FloodLens Pakistan</h1>
+<p class="sub">District heavy-rain warnings 1–3 days ahead and a weekly food-price watch · HackInsight 2026 · team Spark H</p>
+
+<h2>Problem and user</h2>
+<p>The 2025 monsoon killed more than 1,000 people in Pakistan (NDMA). District and PDMA planners
+need 24–72 hours of notice, per district, to decide where to pre-position teams and supplies
+and where to issue local warnings.</p>
+
+<div class="cols">
+<div>
+<h2>Approach</h2>
+<ul>
+  <li><b>Model A (primary):</b> probability that a district's wettest-pixel rain exceeds its own
+  95th percentile of wet-day rain (NASA IMERG Late, 2015–2023), 1–3 days ahead, from archived
+  weather-model forecasts (Open-Meteo Previous Runs) and observed rain lagged ≥14 h.</li>
+  <li><b>Model B (secondary, data ready):</b> weekly price change for 51 items in 17 cities
+  (PBS SPI), 169 weeks collected.</li>
+  <li><b>Insight Agent:</b> answers from NDMA sitreps and advisories, quoting the exact section,
+  with numbers inserted from tables with row IDs. It says "I don't know" when nothing
+  matches, points emergencies to Rescue 1122 and NDMA/PDMA, and has Urdu output.</li>
+</ul>
+</div>
+<div>
+<h2>Pipeline</h2>
+<ul>
+  <li>Hourly Prefect flow: fetch new data → raw files + manifest (source, query, UTC time, SHA-256,
+  licence) → rebuild all tables in a scratch DB → quality agent (fix/fill/flag, logged and
+  replayed) → score → publish <code>status.json</code> for the dashboard.</li>
+  <li><code>make data</code> rebuilds everything from the frozen raw snapshot and refuses any
+  file whose hash changed.</li>
+  <li>Leakage tests: forecast inputs only from forecasts issued 1–3 days ahead; observed rain
+  only from days that ended ≥14 h before issue. Fixed splits; the test set is locked in code.</li>
+</ul>
+</div>
+</div>
+
+<h2>Validation results (1 Jul – 31 Dec 2025; test set run once separately)</h2>
+<table>
+  <tr><th>Brier score, 24 h [95% CI]</th><th>Climatology (baseline)</th><th>Raw forecast cut</th><th>Logistic regression</th><th>Gradient boosting</th></tr>
+  <tr><td>All districts</td><td class="pending">pending</td><td class="pending">pending</td><td class="pending">pending</td><td class="pending">pending</td></tr>
+  <tr><td>Monsoon months (Jul–Sep)</td><td class="pending">pending</td><td class="pending">pending</td><td colspan="2" class="pending">pending</td></tr>
+</table>
+<p class="small">Weakest group and Buner case study (14–15 Aug 2025): <span class="pending">pending</span>.</p>
+
+<div class="cols">
+<div>
+<h2>Data</h2>
+<table>
+  <tr><th>Source</th><th>Use</th></tr>
+  <tr><td>Open-Meteo Previous Runs (CC BY 4.0)</td><td>forecast features</td></tr>
+  <tr><td>NASA GPM IMERG Late V07</td><td>labels, thresholds, baseline</td></tr>
+  <tr><td>OCHA admin-2 boundaries (HDX)</td><td>160 districts</td></tr>
+  <tr><td>UNOSAT 2022 flood extent, Natural Earth, Copernicus DEM</td><td>district groups</td></tr>
+  <tr><td>PBS weekly SPI</td><td>Model B</td></tr>
+  <tr><td>NDMA sitreps and advisories (158 documents)</td><td>citations, local validation</td></tr>
+</table>
+</div>
+<div>
+<h2>Limits</h2>
+<ul>
+  <li>Predicts heavy rain, not floods or damage; not an official warning.</li>
+  <li>Forecast inputs are taken at district centroids; labels use the wettest pixel.</li>
+  <li>The run history misses part of the window (first run 01:28 PKT; laptop slept 04:33–06:10).</li>
+  <li>Urdu-only questions retrieve less well than English ones.</li>
+</ul>
+<h2>Impact</h2>
+<p>A free, district-level rain-risk signal that planners can check every hour, with the reasons
+(forecast rain against the district's own threshold) and official sources one click away.</p>
+</div>
+</div>
+</body>
+</html>
