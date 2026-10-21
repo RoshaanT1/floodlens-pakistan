@@ -19,6 +19,11 @@ fetch:
 	$(PY) -m src.districts build
 	$(PY) -m src.forecasts fetch
 	$(PY) -m src.imerg fetch
+	$(PY) -m src.forecasts live
+	$(PY) -m src.attributes fetch
+	$(PY) -m src.documents fetch
+	$(PY) -m src.spi fetch
+	$(PY) -m src.spi fetch-archived
 
 # Offline: rebuild clean/gold layers from the frozen raw snapshot,
 # verify SHA-256 against manifest, run quality checks.

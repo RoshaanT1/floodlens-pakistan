@@ -119,6 +119,27 @@ RULES = [
          "flag", "wettest pixel below district mean; aggregation error"),
 ]
 
+def _weekly_jump_ok(d: pd.DataFrame) -> pd.Series:
+    """True unless the city's average moved more than 50% from the same item's previous week."""
+    order = d.sort_values(["city", "item_no", "week_end"])
+    prev = order.groupby(["city", "item_no"])["avg_pkr"].shift(1)
+    ok = ~(((order["avg_pkr"] - prev).abs() / prev > 0.5) & prev.notna())
+    return ok.reindex(d.index)
+
+
+RULES += [
+    # PBS weekly prices (Model B); prices are never filled or dropped
+    Rule("spi_price_collected", "spi_price", col("avg_pkr", nullable=False), "flag",
+         "PBS published 0 or nothing for this city and item (not collected); kept NULL, never filled"),
+    Rule("spi_min_le_avg_le_max", "spi_price",
+         pa.DataFrameSchema(checks=pa.Check(lambda d: d.avg_pkr.isna() | ((d.min_pkr <= d.avg_pkr) & (d.avg_pkr <= d.max_pkr)),
+                                            name="min_avg_max")),
+         "flag", "minimum, average and maximum price out of order as published; kept as PBS printed it"),
+    Rule("spi_weekly_jump", "spi_price",
+         pa.DataFrameSchema(checks=pa.Check(_weekly_jump_ok, name="weekly_jump")),
+         "flag", "average moved more than 50% from the previous week; possible typo or parse error, not corrected"),
+]
+
 # timeliness: newest data day vs the snapshot's own fetch time (not the wall clock, so
 # rebuilds of the same snapshot agree)
 TIMELINESS = {

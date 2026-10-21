@@ -5,7 +5,7 @@ for disaster planners in Pakistan.** HackInsight 2026, team Spark H.
 
 > Status on 21 Oct 2026: pipeline, dashboard, Model A (validation stage) and Insight Agent
 > are running. The live dashboard shows Model A probabilities for all 160 districts every hour.
-> The test set (Jan to Sep 2026) is run once by the team; everything below is validation.
+> The test set (Jan to Sep 2026) was run once on 21 Oct with the frozen model: it beats the baseline.
 
 ## The problem
 
@@ -113,6 +113,20 @@ cd ../frontend && npm install && npx vite       # open /live and /ask
 ```
 
 ## Results
+
+**Test set (1 Jan to 30 Sep 2026, run once with the frozen model, 138,720 district-day-leads):**
+
+| Brier [95% CI] | 24 h | 48 h | 72 h | Monsoon months (Jun–Sep), 24 h |
+| --- | --- | --- | --- | --- |
+| Climatology (declared baseline) | 0.0192 [0.0156, 0.0231] | 0.0192 | 0.0192 | 0.0251 [0.0193, 0.0316] |
+| Raw forecast cut at threshold | 0.0246 [0.0207, 0.0290] | 0.0245 | 0.0244 | 0.0305 |
+| **Model A (gradient boosting)** | **0.0177 [0.0146, 0.0213]** | **0.0178** | **0.0179** | **0.0237 [0.0181, 0.0299]** |
+
+Paired bootstrap, model − climatology: 24 h −0.0014 [−0.0022, −0.0008], 48 h −0.0013 [−0.0021, −0.0008],
+72 h −0.0013 [−0.0020, −0.0007]. **The model beats the declared baseline on the test set at every lead, and also
+in monsoon months**, as the declaration requires. Source: `backend/docs/model_a_test.json`.
+
+**Validation (used for model choice and calibration):**
 
 Validation, 1 Jul to 31 Dec 2025 (29,440 district-days per lead; heavy rain on 2.6% of them).
 Brier score with 95% day-block bootstrap intervals; lower is better. Model probabilities are

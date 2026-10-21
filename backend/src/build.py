@@ -14,7 +14,7 @@ STEPS = [
     (forecasts.LIVE_SOURCE, forecasts.build_live, []),  # live view only; never a training input
     (attributes.UNOSAT_SOURCE, attributes.build, []),   # D7; needs all three attribute sources
     ("ndma_sitrep", documents.build, []),               # R1 catalogue; citations only, never training
-    (spi.SOURCE, spi.build, []),                         # B2/B3: prices flagged, never filled
+    (spi.SOURCE, spi.build, ["spi_price"]),              # B2/B3: prices flagged, never filled
     (imerg.SOURCE, rain.build, ["rain_district_day"]),
     (imerg.SOURCE, labels.main, []),  # labels are built from quality-checked rain
     (imerg.SOURCE, model_a.features, []),

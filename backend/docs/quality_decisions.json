@@ -8,5 +8,20 @@
     "action": "flag",
     "decided_at_utc": "2026-10-21T02:16:21Z",
     "reason": "newest day more than 3 days before the latest fetch; dashboard shows the source as stale"
+  },
+  "spi_price.spi_min_le_avg_le_max": {
+    "action": "flag",
+    "decided_at_utc": "2026-10-21T14:57:39Z",
+    "reason": "minimum, average and maximum price out of order as published; kept as PBS printed it"
+  },
+  "spi_price.spi_price_collected": {
+    "action": "flag",
+    "decided_at_utc": "2026-10-21T14:57:39Z",
+    "reason": "PBS published 0 or nothing for this city and item (not collected); kept NULL, never filled"
+  },
+  "spi_price.spi_weekly_jump": {
+    "action": "flag",
+    "decided_at_utc": "2026-10-21T14:57:39Z",
+    "reason": "average moved more than 50% from the previous week; possible typo or parse error, not corrected"
   }
 }
