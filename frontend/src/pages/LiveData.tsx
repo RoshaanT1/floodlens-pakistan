@@ -6,6 +6,7 @@ import Panel from "@/components/common/Panel";
 import EmptyState from "@/components/common/EmptyState";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { backendStatus, formatPkt } from "@/data/backend";
+import LiveMap, { METRIC_LABEL, type LiveMetric } from "@/components/live/LiveMap";
 
 const LEADS = ["1", "2", "3"] as const;
 const HORIZONS = ["24h", "48h", "72h"] as const;
@@ -17,6 +18,10 @@ const cell = "px-3 py-1.5 text-sm tabular-nums";
 export default function LiveData() {
   const status = backendStatus;
   const [sortBy, setSortBy] = useState<"rain" | "name">("rain");
+  const [metric, setMetric] = useState<LiveMetric>("rain1");
+  const metrics: LiveMetric[] = status?.risk
+    ? ["p24", "p48", "p72", "rain1", "rain2", "rain3"]
+    : ["rain1", "rain2", "rain3"];
 
   const rows = useMemo(() => {
     if (!status) return [];
@@ -67,6 +72,27 @@ export default function LiveData() {
                   </>
                 )}
               </dl>
+            </Panel>
+
+            <Panel
+              title="Map"
+              subtitle={status.risk ? `Model A: ${status.risk.label}` : "Raw forecast rain; Model A not trained yet"}
+              action={
+                <div className="flex flex-wrap gap-1">
+                  {metrics.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMetric(m)}
+                      className={`rounded border border-border px-2 py-1 text-xs ${m === metric ? "bg-accent" : "hover:bg-accent/60"}`}
+                    >
+                      {METRIC_LABEL[m]}
+                    </button>
+                  ))}
+                </div>
+              }
+            >
+              <LiveMap status={status} metric={metric} />
             </Panel>
 
             <Panel
