@@ -110,7 +110,8 @@ def query(text: str, k: int = 5) -> list[dict]:
     q = _model().encode(["query: " + text], normalize_embeddings=True).astype(np.float32)
     scores, ids = index.search(q, k)
     return [{**df.iloc[i][["section_id", "source", "title", "published", "url", "page"]].to_dict(),
-             "score": float(s), "text": df.iloc[i].text[:300]} for s, i in zip(scores[0], ids[0]) if i >= 0]
+             "score": float(s), "text": df.iloc[i].text[:300], "text_full": df.iloc[i].text}
+            for s, i in zip(scores[0], ids[0]) if i >= 0]
 
 
 if __name__ == "__main__":

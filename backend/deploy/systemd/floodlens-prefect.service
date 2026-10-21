@@ -1,0 +1,12 @@
+# Prefect server for the hourly flow. Install: see deploy/README.md
+[Unit]
+Description=FloodLens Prefect server (127.0.0.1:4200)
+
+[Service]
+WorkingDirectory=/home/roshaan/Desktop/Project/Competition/hackInsight/backend
+ExecStart=/home/roshaan/Desktop/Project/Competition/hackInsight/backend/.venv/bin/prefect server start --host 127.0.0.1 --port 4200
+Restart=on-failure
+RestartSec=15
+
+[Install]
+WantedBy=default.target

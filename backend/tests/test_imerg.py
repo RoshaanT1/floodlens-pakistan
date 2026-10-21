@@ -37,3 +37,14 @@ def test_open_day_masks_fill_and_never_reads_it_as_zero(tmp_path):
     assert bool(out.is_fill[0, 0, 0]) and np.isnan(out.precipitation[0, 0, 0])
     assert int(out.is_fill.sum()) == 1
     assert float(out.precipitation.max()) == 2.5
+
+
+def test_session_prefers_token(monkeypatch):
+    from src import imerg
+    monkeypatch.setattr(imerg, "load_dotenv", lambda *a, **k: None)
+    monkeypatch.setenv("EARTHDATA_TOKEN", "abc")
+    monkeypatch.setenv("EARTHDATA_USERNAME", "u")
+    monkeypatch.setenv("EARTHDATA_PASSWORD", "p")
+    s = imerg.session()
+    assert s.headers["Authorization"] == "Bearer abc" and s.auth is None
+    assert imerg.has_credentials()

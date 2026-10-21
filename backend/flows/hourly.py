@@ -6,7 +6,8 @@
 Each run:
   1. fetches what is new: archived forecasts (Previous Runs backfill, inside a
      per-UTC-day call budget read from the manifest), the live forecast (at most every 6 h) and
-     IMERG Late days (skipped, with a logged reason, while .env has no Earthdata login);
+     IMERG Late days (skipped, with a logged reason, while .env has no Earthdata login),
+     and once a day the PBS weekly prices and the newest NDMA advisories and sitreps;
   2. rebuilds every table (`make data`) into a scratch copy of the database and swaps it
      in only if the build passes, so a failed run never touches the live database;
   3. exports frontend/public/data/status.json (atomic write).
@@ -24,7 +25,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from prefect import flow, get_run_logger, task
 
-from src import forecasts, imerg
+from src import documents, forecasts, imerg, manifest, spi
 from src.config import DB_PATH, FORECAST_START, ROOT
 
 CALLS_PER_DAY = 9000       # per UTC day; Open-Meteo free tier is 10,000; keep headroom for retries
@@ -64,19 +65,64 @@ def fetch_live_forecast() -> str:
         return f"stopped: {e}"
 
 
+def _other_imerg_fetch_running() -> bool:
+    """A manual `python -m src.imerg fetch` backfill (started before the lock existed, too)."""
+    from pathlib import Path
+    for p in Path("/proc").glob("[0-9]*/cmdline"):
+        try:
+            args = p.read_bytes().split(b"\0")
+        except OSError:
+            continue
+        if b"src.imerg" in args and b"fetch" in args and int(p.parent.name) != os.getpid():
+            return True
+    return False
+
+
 @task(retries=1, retry_delay_seconds=300)
 def fetch_imerg() -> str:
     log = get_run_logger()
+    if _other_imerg_fetch_running():
+        return "skipped: a manual IMERG backfill is running"
     if not imerg.has_credentials():
-        msg = "skipped: no EARTHDATA_USERNAME/EARTHDATA_PASSWORD in backend/.env"
+        msg = "skipped: no EARTHDATA_TOKEN (or username/password) in backend/.env"
         log.warning(msg)
         return msg
     try:
         imerg.fetch(imerg.IMERG_START, _yesterday(), workers=4, max_days=IMERG_DAYS_PER_RUN)
-    except SystemExit as e:  # login rejected; keep the rest of the run going
-        log.error(str(e))
-        return f"failed: {e}"
+    except (Exception, SystemExit) as e:  # login rejected or NASA unreachable: log it, keep the run going
+        log.error(f"imerg: {e!r}")
+        return f"failed: {e.__class__.__name__}; retried next run"
     return "ok"
+
+
+def _due(listing_source: str, hours: int = 24) -> bool:
+    last = manifest.latest(listing_source)
+    since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return last is None or last["fetched_at_utc"] < since
+
+
+@task(retries=1, retry_delay_seconds=300)
+def fetch_spi_daily() -> str:
+    """PBS publishes one week each Thursday; checking daily is plenty."""
+    if not _due(spi.LISTING):
+        return "ok: checked in the last 24 h"
+    try:
+        spi.fetch()
+    except Exception as e:  # PBS down must not stop the forecast pipeline
+        get_run_logger().error(f"pbs: {e}")
+        return f"failed: {e.__class__.__name__}; retried next run"
+    return "ok: checked"
+
+
+@task(retries=1, retry_delay_seconds=300)
+def fetch_documents_daily() -> str:
+    if not _due(documents.LISTING):
+        return "ok: checked in the last 24 h"
+    try:
+        return f"ok: {documents.fetch_recent()} new documents"
+    except Exception as e:  # NDMA down must not stop the forecast pipeline
+        get_run_logger().error(f"ndma: {e}")
+        return f"failed: {e.__class__.__name__}; retried next run"
 
 
 def _run(cmd: list[str], env: dict) -> None:
@@ -116,6 +162,8 @@ def hourly() -> dict:
         "open_meteo_previous_runs": fetch_archived_forecasts(),
         "open_meteo_live_forecast": fetch_live_forecast(),
         "imerg_late_daily": fetch_imerg(),
+        "pbs_spi_annex": fetch_spi_daily(),
+        "ndma_documents": fetch_documents_daily(),
     }
     rebuild()
     status = {"last_success_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
