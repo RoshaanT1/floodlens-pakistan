@@ -65,18 +65,33 @@ def fetch_live_forecast() -> str:
         return f"stopped: {e}"
 
 
+def _other_imerg_fetch_running() -> bool:
+    """A manual `python -m src.imerg fetch` backfill (started before the lock existed, too)."""
+    from pathlib import Path
+    for p in Path("/proc").glob("[0-9]*/cmdline"):
+        try:
+            args = p.read_bytes().split(b"\0")
+        except OSError:
+            continue
+        if b"src.imerg" in args and b"fetch" in args and int(p.parent.name) != os.getpid():
+            return True
+    return False
+
+
 @task(retries=1, retry_delay_seconds=300)
 def fetch_imerg() -> str:
     log = get_run_logger()
+    if _other_imerg_fetch_running():
+        return "skipped: a manual IMERG backfill is running"
     if not imerg.has_credentials():
         msg = "skipped: no EARTHDATA_TOKEN (or username/password) in backend/.env"
         log.warning(msg)
         return msg
     try:
         imerg.fetch(imerg.IMERG_START, _yesterday(), workers=4, max_days=IMERG_DAYS_PER_RUN)
-    except SystemExit as e:  # login rejected; keep the rest of the run going
-        log.error(str(e))
-        return f"failed: {e}"
+    except (Exception, SystemExit) as e:  # login rejected or NASA unreachable: log it, keep the run going
+        log.error(f"imerg: {e!r}")
+        return f"failed: {e.__class__.__name__}; retried next run"
     return "ok"
 
 

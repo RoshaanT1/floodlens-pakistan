@@ -28,3 +28,4 @@ data/flow_status.json
 *.building.duckdb
 .venv-insight/
 data/clean/ne_coastline/
+data/.imerg_fetch.lock

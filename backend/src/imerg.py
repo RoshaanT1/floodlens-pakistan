@@ -172,7 +172,28 @@ def fetched_days() -> set[date]:
     return days
 
 
+LOCK = ROOT / "data" / ".imerg_fetch.lock"
+
+
+def fetch_lock():
+    """Exclusive, non-blocking lock so the hourly flow and a manual backfill never overlap.
+    Returns the open lock file (keep it referenced), or None if another fetch holds it."""
+    import fcntl
+    LOCK.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(LOCK, "w")
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        fh.close()
+        return None
+    return fh
+
+
 def fetch(start: date, end: date, workers: int, max_days: int | None = None, endpoint: str = "cloud") -> None:
+    lock = fetch_lock()
+    if lock is None:
+        print("another IMERG fetch is running; skipping")
+        return
     s = session()
     done = fetched_days()
     todo = []
@@ -198,6 +219,8 @@ def fetch(start: date, end: date, workers: int, max_days: int | None = None, end
             day, filename, q = futures[f]
             try:
                 manifest.save_raw(f.result(), SOURCE, q, f"{day:%Y/%m}/{filename}.subset.nc4")
+            except FileExistsError:
+                print(f"  {day} already stored by another fetch; kept that file")
             except (requests.RequestException, ValueError) as e:
                 failed += 1
                 print(f"  {day} failed, will retry on next run: {e}")
