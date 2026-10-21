@@ -193,3 +193,6 @@ python3 -m venv .venv-insight && .venv-insight/bin/pip install -r requirements-i
 | fascinating-oyster (scheduled) | 21 Oct 04:05 | Completed | 4.2 min | 257 calls (UTC day 20 Oct budget reached 8,877 of 9,000) |
 | (05:05 slot) | – | – | – | laptop asleep 04:33 to 06:10 |
 | invaluable-stallion (05:05 slot, ran late) | 21 Oct 06:10 | Completed | 34 min | 1,971 calls; forecasts now to 31 Oct 2025 |
+| porcelain-orca (06:05 slot, ran late) | 21 Oct 06:44 | Completed | 31.5 min | forecasts now to 28 Feb 2026 |
+| meticulous-frogmouth (07:05) | 21 Oct ~07:16 | **Failed** | – | my bug: the Earthdata token had just been added; the IMERG task tried gpm1.gesdisc (unreachable from this machine) and raised. Fixed: IMERG errors are now logged without failing the run, IMERG moved to the Earthdata Cloud endpoint, and the flow skips IMERG while a manual backfill runs |
+| (07:55) | – | – | – | moved to systemd user units (`floodlens-prefect`, `floodlens-flow`); the flow unit holds the sleep inhibitor |
