@@ -69,7 +69,7 @@ export default function DistrictDrawer({
         side="right"
         overlay={false}
         onInteractOutside={(e) => e.preventDefault()}
-        className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[480px]"
+        className="z-[1200] flex w-full flex-col gap-0 overflow-hidden p-0 shadow-2xl sm:max-w-[480px]"
       >
         {district && (
           <>

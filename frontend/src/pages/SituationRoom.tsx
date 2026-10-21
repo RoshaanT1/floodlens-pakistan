@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
-import TimeSlider from "@/components/layout/TimeSlider";
+import TimeSlider, { sliderMax } from "@/components/layout/TimeSlider";
 import KpiRow from "@/components/layout/KpiRow";
 import MobileTabs from "@/components/layout/MobileTabs";
 import CollapsedRail from "@/components/layout/CollapsedRail";
@@ -15,6 +15,7 @@ import type { Alert } from "@/data/types";
 import { activeAlerts, computeKpis, districtById, timeAtOffset } from "@/lib/select";
 import { useMedia } from "@/lib/useMedia";
 import { useMockLoad } from "@/lib/useMockLoad";
+import { realSituation } from "@/data/backend";
 
 type MobileTabValue = "alerts" | "map" | "layers";
 
@@ -45,9 +46,9 @@ export default function SituationRoom() {
     if (!playing) return;
     const id = window.setInterval(() => {
       setOffset((current) => {
-        if (current >= 7) {
+        if (current >= sliderMax()) {
           setPlaying(false);
-          return 7;
+          return sliderMax();
         }
         return current + 1;
       });
@@ -55,8 +56,14 @@ export default function SituationRoom() {
     return () => window.clearInterval(id);
   }, [playing]);
 
+  // moving through days is about day-by-day rain: show it, and hide the static 7-day total
+  const showDailyRain = () => {
+    if (realSituation) setLayers((current) => ({ ...current, rainfall: true, satellite: false }));
+  };
+
   const togglePlay = () => {
-    if (!playing && offset >= 7) setOffset(-7);
+    showDailyRain();
+    if (!playing && offset >= sliderMax()) setOffset(-7);
     setPlaying((p) => !p);
   };
 
@@ -107,6 +114,7 @@ export default function SituationRoom() {
         onOffsetChange={(value) => {
           setOffset(value);
           setPlaying(false);
+          showDailyRain();
         }}
         playing={playing}
         onTogglePlay={togglePlay}

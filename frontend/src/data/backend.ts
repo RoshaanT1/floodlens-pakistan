@@ -240,7 +240,15 @@ export let realSituation = false;
 
 // Risk bands: Model A probability of rain above the
 // district's own 95th percentile, and for past days the observed wettest pixel vs that threshold.
-const levelFromP = (p: number): RiskLevel => (p >= 0.2 ? "severe" : p >= 0.1 ? "high" : p >= 0.05 ? "moderate" : "low");
+// Risk relative to the district's normal for this month (the declared climatology baseline):
+// 1.5x moderate, 3x high, 6x severe. Without a climatology value, fall back to absolute bands.
+const levelFromP = (p: number, clim?: number | null): RiskLevel => {
+  if (clim && clim > 0) {
+    const r = p / clim;
+    return r >= 6 ? "severe" : r >= 3 ? "high" : r >= 1.5 ? "moderate" : "low";
+  }
+  return p >= 0.2 ? "severe" : p >= 0.1 ? "high" : p >= 0.05 ? "moderate" : "low";
+};
 const levelFromObs = (mm: number, thr: number): RiskLevel =>
   mm >= thr ? "severe" : mm >= 0.8 * thr ? "high" : mm >= 0.5 * thr ? "moderate" : "low";
 
@@ -260,7 +268,7 @@ function applySituation(status: BackendStatus) {
       let missing = true;
       if (off >= 0 && off <= 2) {  // now = next 24 h, +1 = 48 h, +2 = 72 h
         const p = risk?.[(["24h", "48h", "72h"] as const)[off]]?.p;
-        if (p != null) { level = levelFromP(p); missing = false; }
+        if (p != null) { level = levelFromP(p, info?.clim_p_month); missing = false; }
       } else if (off < 0) {
         const mm = info?.obs_daily_wettest_mm?.[date];
         if (mm != null && info?.threshold_mm != null) { level = levelFromObs(mm, info.threshold_mm); missing = false; }

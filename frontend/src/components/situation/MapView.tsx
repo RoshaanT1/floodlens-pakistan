@@ -40,8 +40,8 @@ type MapInstance = {
 const HOME: [number, number] = [30.2, 69.4];
 
 // Real-data rendering (pipeline): rain in blue bands, sudden PBS price moves as red/green markers.
-const RAIN_BREAKS = [1, 5, 10, 25, 50];
-const RAIN_BLUES = ["#c6dbef", "#6baed6", "#3182bd", "#08519c", "#08306b"];
+const RAIN_BREAKS = [0.5, 2, 5, 10, 25];
+const RAIN_BLUES = ["#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"];
 const rainColor = (mm: number) => (mm < RAIN_BREAKS[0] ? null : RAIN_BLUES[Math.min(RAIN_BREAKS.filter((b) => mm >= b).length - 1, 4)]);
 const SUDDEN_PCT = 10;
 const PRICE_UP = "#d7301f";
@@ -195,7 +195,7 @@ export default function MapView({
               <Polygon
                 key={`rain-${d.id}`}
                 positions={d.polygon}
-                pathOptions={{ color, weight: 0.6, fillColor: color, fillOpacity: 0.75 * opacity.hazard }}
+                pathOptions={{ color: "#08306b", weight: 0.8, fillColor: color, fillOpacity: Math.max(0.65, 0.9 * opacity.hazard) }}
               >
                 <Tooltip className="fl-tip" sticky>
                   <span className="font-medium">{d.name}</span>

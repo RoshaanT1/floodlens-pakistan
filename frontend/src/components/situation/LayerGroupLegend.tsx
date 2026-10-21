@@ -9,7 +9,7 @@ export default function LayerGroupLegend({ groupKey }: { groupKey: Layers.GroupK
   if (groupKey === "hazard") {
     return (
       <div className="space-y-2.5">
-        <RiskScaleLegend title="District heavy-rain risk" />
+        <RiskScaleLegend title={realSituation ? "Heavy-rain risk vs this month's normal (1.5× · 3× · 6×)" : "District heavy-rain risk"} />
         {!realSituation && <FloodLevelLegend title="Gauge level against thresholds" />}
         <MarkerLegend
           title={realSituation ? "Rainfall" : "Rain and satellite extent"}

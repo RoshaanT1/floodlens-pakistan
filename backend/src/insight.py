@@ -45,6 +45,10 @@ TEXT = {
         "risk": "Model A probability of heavy rain in {name} on {day}: {pct}% ({label})",
         "price": "Average price of {item} ({unit}) in {city}, week ending {day}: Rs {pkr}",
         "disclaimer": "Not an official warning. Follow NDMA and PDMA advisories.",
+        "risk_top": "Highest heavy-rain risk, next 24 h: {name} ({prov}) {pct}%, {ratio} its normal for this month",
+        "rain_top": "Most forecast rain, next 3 days: {name} ({prov}) {mm} mm",
+        "price_move": "{item} in {city}: {sign}{pct}% this week (Rs {old} to Rs {new}, PBS week ending {day})",
+        "latest_doc": "Latest NDMA document: \"{title}\" ({kind}, {day}) {url}",
     },
     "ur": {
         "emergency": "اگر آپ یا کوئی اور ابھی خطرے میں ہے تو ریسکیو 1122 پر کال کریں اور این ڈی ایم اے / "
@@ -56,6 +60,10 @@ TEXT = {
         "risk": "{name} میں {day} کو شدید بارش کا امکان (ماڈل اے): {pct} فیصد ({label})",
         "price": "{city} میں {item} ({unit}) کی اوسط قیمت، ہفتہ ختم {day}: {pkr} روپے",
         "disclaimer": "یہ سرکاری وارننگ نہیں ہے۔ این ڈی ایم اے اور پی ڈی ایم اے کی ہدایات پر عمل کریں۔",
+        "risk_top": "اگلے 24 گھنٹوں میں شدید بارش کا سب سے زیادہ امکان: {name} ({prov}) {pct} فیصد، اس مہینے کے معمول کا {ratio}",
+        "rain_top": "اگلے 3 دنوں میں سب سے زیادہ متوقع بارش: {name} ({prov}) {mm} ملی میٹر",
+        "price_move": "{city} میں {item}: اس ہفتے {sign}{pct} فیصد (Rs {old} سے Rs {new}، ہفتہ ختم {day})",
+        "latest_doc": "این ڈی ایم اے کی تازہ ترین دستاویز: \"{title}\" ({kind}، {day}) {url}",
     },
 }
 
@@ -80,6 +88,80 @@ def find_district(question: str, names: list[str]) -> str | None:
             return name
     hits = [n for n in names if re.search(r"\b" + re.escape(n.lower()) + r"\b", q)]
     return max(hits, key=len) if hits else None
+
+
+DIGEST = re.compile(r"\b(now|today|latest|happening|last 24|update|news|new|summary|overview|situation|what.?s up)\b|ابھی|آج|تازہ|صورتحال", re.I)
+RAIN_WHERE = re.compile(r"\bwhere\b.*\brain|\brain\b.*\b(next|coming|tomorrow|this week)|\bwhich districts?\b|کہاں.*بارش|بارش.*کہاں", re.I)
+PRICE_MOVES = re.compile(r"\b(food|prices?)\b.*\b(jump|rise|rose|fell|drop|change|moved?|week|up|down)|\b(which|what)\b.*\bprices?\b|قیمت", re.I)
+
+
+def _risk_top(con, t, n):
+    rows = con.execute(f"""
+        SELECT r.row_id, d.name, d.province, r.p_heavy_rain, b.p_exceed
+        FROM risk_live r JOIN districts d USING (district_id)
+        LEFT JOIN baseline_climatology b ON b.district_id = r.district_id AND b.month = month(r.date_utc)
+        WHERE r.lead_days = 1 ORDER BY r.p_heavy_rain DESC LIMIT {n}""").fetchall()
+    out = []
+    for row_id, name, prov, p, clim in rows:
+        ratio = f"{p / clim:.1f}×" if clim else "n/a"
+        out.append((t["risk_top"].format(name=name, prov=prov, pct=round(100 * p, 1), ratio=ratio) + f" [{row_id}]", row_id))
+    return out
+
+
+def _rain_top(con, t, n):
+    rows = con.execute(f"""
+        SELECT f.district_id, d.name, d.province, sum(f.precip_sum_mm) AS mm, min(f.date_utc) AS d0
+        FROM forecast_live f JOIN districts d USING (district_id)
+        WHERE f.days_ahead BETWEEN 1 AND 3 GROUP BY ALL ORDER BY mm DESC LIMIT {n}""").fetchall()
+    return [(t["rain_top"].format(name=name, prov=prov, mm=round(mm, 1)) + f" [{did}_{d0}_live+3d]", f"{did}_{d0}_live+3d")
+            for did, name, prov, mm, d0 in rows]
+
+
+def _price_moves(con, t, n):
+    rows = con.execute(f"""
+        WITH w AS (SELECT max(week_end) AS w FROM spi_price),
+        cur AS (SELECT s.* FROM spi_price s, w WHERE s.week_end = w.w AND s.avg_pkr IS NOT NULL),
+        prev AS (SELECT s.city, s.item_no, s.avg_pkr FROM spi_price s, w WHERE s.week_end = w.w - INTERVAL 7 DAY)
+        SELECT c.row_id, c.city, c.item, c.week_end, p.avg_pkr, c.avg_pkr, (c.avg_pkr / p.avg_pkr - 1) * 100 AS pct
+        FROM cur c JOIN prev p USING (city, item_no) WHERE p.avg_pkr > 0
+        ORDER BY abs(pct) DESC LIMIT {n}""").fetchall()
+    return [(t["price_move"].format(item=item, city=city, sign="+" if pct > 0 else "", pct=round(pct, 1),
+                                    old=f"{old:,.0f}", new=f"{new:,.0f}", day=day) + f" [{row_id}]", row_id)
+            for row_id, city, item, day, old, new, pct in rows]
+
+
+def _latest_doc(con, t):
+    row = con.execute("""SELECT doc_id, title, published, url, source FROM documents
+                         WHERE source IN ('ndma_advisory', 'ndma_sitrep') AND published IS NOT NULL
+                         ORDER BY published DESC LIMIT 1""").fetchone()
+    if not row:
+        return []
+    doc_id, title, day, url, src = row
+    kind = "advisory" if src == "ndma_advisory" else "situation report"
+    return [(t["latest_doc"].format(title=title.rstrip(" -"), kind=kind, day=str(day)[:10], url=url) + f" [{doc_id}]", doc_id)]
+
+
+def digest_facts(con, question: str, lang: str) -> list[tuple[str, str]]:
+    """Country-wide answers for 'what's happening' style questions, from live tables only."""
+    t = TEXT[lang]
+    have = {n for (n,) in con.execute("SHOW TABLES").fetchall()}
+    q = question.lower()
+    out: list[tuple[str, str]] = []
+    if DIGEST.search(q):
+        if "risk_live" in have:
+            out += _risk_top(con, t, 3)
+        if "forecast_live" in have:
+            out += _rain_top(con, t, 3)
+        if "spi_price" in have:
+            out += _price_moves(con, t, 3)
+        if "documents" in have:
+            out += _latest_doc(con, t)
+    else:
+        if RAIN_WHERE.search(q) and "forecast_live" in have:
+            out += _rain_top(con, t, 5)
+        if PRICE_MOVES.search(q) and "spi_price" in have:
+            out += _price_moves(con, t, 6)
+    return out
 
 
 def table_facts(con, question: str, lang: str) -> tuple[list[str], list[str]]:
@@ -160,7 +242,13 @@ def answer(question: str, lang: str = "en", db_path=DB_PATH) -> Answer:
     with duckdb.connect(str(db_path), read_only=True) as con:
         facts, out.row_ids = table_facts(con, question, lang)
         district = find_district(question, _districts(con))
-    hits = retrieve(question, district)
+        live = False
+        if not facts and not district:  # country-wide questions: what's happening, where rain, which prices
+            pairs = digest_facts(con, question, lang)
+            facts, out.row_ids = [f for f, _ in pairs], [r for _, r in pairs]
+            live = bool(pairs)
+    # questions answered from live tables are about now: old advisories would mislead, so no quotes
+    hits = [] if live else retrieve(question, district)
     if hits:
         parts.append(t["docs"])
         for h in hits:
