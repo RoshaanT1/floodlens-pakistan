@@ -1,9 +1,10 @@
 import { Link, NavLink } from "react-router-dom";
-import { Moon, Sun, Waves } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { LIVE_LABEL } from "@/data/mockData";
 import { realSituation } from "@/data/backend";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { PakistanMapIcon } from "@/components/icons/PakistanMapIcon";
 
 const NAV = [
   { to: "/", label: "Situation Room", end: true },
@@ -29,7 +30,7 @@ export default function TopBar() {
       <div className="flex h-12 items-center gap-3 px-3">
         <Link to="/" className="flex items-center gap-2">
           <span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground">
-            <Waves className="h-4 w-4" />
+            <PakistanMapIcon className="h-4 w-4" />
           </span>
           <span className="font-heading text-sm font-semibold tracking-tight">FloodLens</span>
         </Link>
