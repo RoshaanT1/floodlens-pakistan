@@ -7,6 +7,18 @@ for disaster planners in Pakistan.** HackInsight 2026, team Spark H.
 > are running. The live dashboard shows Model A probabilities for all 160 districts every hour.
 > The test set (Jan to Sep 2026) was run once on 21 Oct with the frozen model: it beats the baseline.
 
+## Submission links
+
+| | |
+| --- | --- |
+| Live dashboard (Hugging Face Space, no login) | https://huggingface.co/spaces/RoshaanT1/floodlens-pakistan |
+| Demo video (2:55, no login) | https://roshaant1-floodlens-pakistan.static.hf.space/demo.mp4 |
+| One-page summary | [`Summary.pdf`](Summary.pdf) |
+| Dataset proposal | [`datasetproposal.pdf`](datasetproposal.pdf) |
+| Run history, Tue 16:00 to Wed 16:00 PKT (unedited) | [`backend/docs/prefect_runs.csv`](backend/docs/prefect_runs.csv) + [`backend/docs/screenshots/`](backend/docs/screenshots/) |
+| AI use log | [`AI_Use_Log.md`](AI_Use_Log.md) |
+| Participant guide, answered | [`HackInsight_Guide_SparkH.pdf`](HackInsight_Guide_SparkH.pdf), [`GUIDE_ANSWERS.md`](GUIDE_ANSWERS.md) |
+
 ## The problem
 
 The 2025 monsoon killed more than 1,000 people in Pakistan (NDMA). District and provincial

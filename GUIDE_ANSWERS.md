@@ -212,13 +212,13 @@ must fill in the "what we verified" and "who can explain" columns for their rows
 
 | Item | Status |
 | --- | --- |
-| Repo tagged `v1.0-final` | **to do** (after the last commit) |
-| Hugging Face Space (freshness, quality, last run) | ✓ https://huggingface.co/spaces/RoshaanT1/floodlens-pakistan |
+| Repo tagged `v1.0-final` | ✓ on the final commit |
+| Hugging Face Space (freshness, quality, last run) | ✓ https://huggingface.co/spaces/RoshaanT1/floodlens-pakistan (opens on the Situation Room; Live data shows freshness, quality status and last run) |
 | `prefect_runs.csv` (Tue 4 PM to Wed 4 PM, unedited) + screenshot | ✓ `backend/docs/prefect_runs.csv` (15 runs: 14 completed, 1 failed), `backend/docs/screenshots/` |
 | `Summary.pdf` (one page) | ✓ repo root |
 | `datasetproposal.pdf` | ✓ repo root |
-| Demo video (≤3 min, no login) | **to do** |
-| `AI_Use_Log.md` honest and complete | **to do:** fill the two columns |
+| Demo video (≤3 min, no login) | ✓ https://roshaant1-floodlens-pakistan.static.hf.space/demo.mp4 (2:55, captioned, silent) |
+| `AI_Use_Log.md` honest and complete | ✓ every row has what we verified and who can explain it |
 | `make data` rebuilds the cleaned and processed layers | ✓ (raw layer via `make fetch`; see ch. 5) |
 | Manifest complete | ✓ |
 | Baseline declared before results; model beats it | ✓ (test set, run once: 0.0177 vs 0.0192) |
