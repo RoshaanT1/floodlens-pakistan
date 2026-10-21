@@ -3,9 +3,20 @@
 **District heavy-rain warnings one to three days ahead, plus a weekly food-price watch,
 for disaster planners in Pakistan.** HackInsight 2026, team Spark H.
 
-> Status on 21 Oct 2026: pipeline, dashboard, Model A (validation stage) and Insight Agent
-> are running. The live dashboard shows Model A probabilities for all 160 districts every hour.
-> The test set (Jan to Sep 2026) was run once on 21 Oct with the frozen model: it beats the baseline.
+> Status on 21 Oct 2026: pipeline, dashboard, Model A and Insight Agent are running. The live
+> dashboard shows Model A probabilities for all 160 districts every hour. The test set (Jan to
+> Sep 2026) was run once on 21 Oct with the frozen model: it beats the declared baseline.
+
+**Deployed:** https://huggingface.co/spaces/RoshaanT1/floodlens-pakistan
+(full screen: https://roshaant1-floodlens-pakistan.static.hf.space/)
+
+## Team Spark H
+
+| Member | Role | Main work |
+| --- | --- | --- |
+| Roshaan Tahir | Team Lead, Lead Architect | Open-Meteo forecast pipeline, Model A, Insight Agent, dashboard integration |
+| M Hammad Khan | Lead Backend | NASA IMERG satellite-rain fetcher, district rain, thresholds and labels, data quality checks |
+| M Huzaifa | Lead Data Sources | Hugging Face Space deployment (Docker server, build script, deploy checklist), AI-use records |
 
 ## Submission links
 
