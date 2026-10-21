@@ -179,6 +179,19 @@ def brier_ci(y, p, dates, n_boot: int = N_BOOT, seed: int = SEED) -> dict:
     return {"brier": brier(y, p), "lo": float(lo), "hi": float(hi), "n": int(len(y))}
 
 
+def brier_diff_ci(y, p_model, p_base, dates, n_boot: int = N_BOOT, seed: int = SEED) -> dict:
+    """Paired day-block bootstrap of Brier(model) - Brier(baseline); negative = model better."""
+    y, a, b = (np.asarray(v, float) for v in (y, p_model, p_base))
+    codes, uniq = pd.factorize(pd.Series(dates))
+    d = np.bincount(codes, weights=(a - y) ** 2 - (b - y) ** 2)
+    cnt = np.bincount(codes)
+    draws = np.random.default_rng(seed).integers(0, len(uniq), size=(n_boot, len(uniq)))
+    boot = d[draws].sum(1) / cnt[draws].sum(1)
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return {"diff": float(d.sum() / cnt.sum()), "lo": float(lo), "hi": float(hi),
+            "p_model_not_better": float(np.mean(boot >= 0))}
+
+
 def baselines(df: pd.DataFrame) -> dict[str, np.ndarray]:
     return {
         "climatology": df["clim_p"].fillna(0).to_numpy(),
@@ -307,6 +320,11 @@ def train(db_path=DB_PATH) -> dict:
             best, best_score, previous = (kind, model), s24["brier"], f"{kind} {s24['brier']:.4f}"
 
     report["chosen"] = best[0] if best else None
+    if best:  # is the gain over climatology bigger than day-to-day noise?
+        report["chosen_minus_climatology"] = {
+            f"{24 * lead}h": brier_diff_ci(preds.loc[m, "label"], preds.loc[m, f"p_{best[0]}"],
+                                           preds.loc[m, "p_climatology"], preds.loc[m, "date_utc"])
+            for lead in LEADS for m in [(preds["lead_days"] == lead).to_numpy()]}
     with duckdb.connect(str(db_path)) as con:  # honest (cross-fitted) validation probabilities, for A5/A6/E2
         con.execute("CREATE OR REPLACE TABLE validation_predictions_a AS SELECT * FROM preds ORDER BY row_id")
     report["beats_climatology_on_validation"] = best is not None
@@ -318,6 +336,50 @@ def train(db_path=DB_PATH) -> dict:
         print("no model beat climatology on validation; no artifact written, live view keeps climatology")
     (ROOT / "docs" / "model_a_validation.json").write_text(json.dumps(report, indent=2, default=str))
     print(json.dumps({k: v for k, v in report.items() if k != "models"}, indent=2, default=str))
+    return report
+
+
+# --------------------------------------------------------------------------- E3: test (once)
+
+TEST_OUT = ROOT / "docs" / "model_a_test.json"
+
+
+def test(db_path=DB_PATH) -> dict:
+    """Score the test period (1 Jan to 30 Sep 2026) ONCE with the frozen current artifact.
+
+    Nothing is fitted, tuned or recalibrated here. Refuses to run without FLOODLENS_RUN_TEST=1
+    and refuses a second run (delete docs/model_a_test.json only if the first run crashed).
+    """
+    import os
+    if os.environ.get("FLOODLENS_RUN_TEST") != "1":
+        raise SystemExit("the test set is run once by the team: FLOODLENS_RUN_TEST=1 python -m src.model_a test")
+    if TEST_OUT.exists():
+        raise SystemExit(f"{TEST_OUT} exists: the test set has already been run once")
+    loaded = load_current()
+    if loaded is None:
+        raise SystemExit("no Model A artifact")
+    model, meta = loaded
+    with duckdb.connect(str(db_path), read_only=True) as con:
+        df = con.execute("SELECT * FROM features_a").df()
+    te = split(df, "test")
+    if te.empty:
+        raise SystemExit("no labelled test rows (needs forecasts and IMERG for Jan to Sep 2026)")
+    p = model.predict(te)
+    base = baselines(te)
+    monsoon = pd.to_datetime(te["date_utc"]).dt.month.isin([6, 7, 8, 9]).to_numpy()
+    report = {"model_version": meta["version"], "n_test": len(te), "positive_rate": float(te["label"].mean()),
+              "run_at_utc": datetime.now(timezone.utc).isoformat(), "scores": {}, "model_minus_climatology": {}}
+    for name, probs in [("model", p), *base.items()]:
+        report["scores"][name] = {"all": score_by_lead(te, probs),
+                                  "monsoon": score_by_lead(te[monsoon], np.asarray(probs)[monsoon])}
+    for lead in LEADS:
+        m = (te["lead_days"] == lead).to_numpy()
+        report["model_minus_climatology"][f"{24 * lead}h"] = brier_diff_ci(
+            te.loc[m, "label"], p[m], base["climatology"][m], te.loc[m, "date_utc"])
+    TEST_OUT.write_text(json.dumps(report, indent=2, default=str))
+    s24 = report["scores"]
+    print(f"TEST (run once) 24 h Brier: model {fmt(s24['model']['all']['24h'])}, "
+          f"climatology {fmt(s24['climatology']['all']['24h'])} -> {TEST_OUT}")
     return report
 
 
@@ -371,4 +433,7 @@ def score_live(db_path=DB_PATH) -> int:
 
 
 if __name__ == "__main__":
-    {"features": features, "train": train, "score": score_live}[sys.argv[1]]()
+    # run through the imported module so pickled classes are `src.model_a.Calibrated`,
+    # loadable by the flow and src.replay (not `__main__.Calibrated`)
+    from src import model_a as _m
+    {"features": _m.features, "train": _m.train, "score": _m.score_live, "test": _m.test}[sys.argv[1]]()

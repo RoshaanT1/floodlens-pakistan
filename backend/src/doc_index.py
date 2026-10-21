@@ -12,6 +12,7 @@ cosine similarity. The index lives in data/gold (rebuilt from raw, not tracked i
 import json
 import re
 import sys
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -80,9 +81,17 @@ def sections() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+@lru_cache(maxsize=1)
 def _model():
     from sentence_transformers import SentenceTransformer
     return SentenceTransformer(MODEL, device="cpu")
+
+
+@lru_cache(maxsize=1)
+def _loaded():
+    """Index and sections, read once per process (the API answers many questions)."""
+    import faiss
+    return faiss.read_index(str(INDEX)), pd.read_parquet(SECTIONS)
 
 
 def build() -> int:
@@ -103,10 +112,7 @@ def build() -> int:
 
 
 def query(text: str, k: int = 5) -> list[dict]:
-    import faiss
-
-    index = faiss.read_index(str(INDEX))
-    df = pd.read_parquet(SECTIONS)
+    index, df = _loaded()
     q = _model().encode(["query: " + text], normalize_embeddings=True).astype(np.float32)
     scores, ids = index.search(q, k)
     return [{**df.iloc[i][["section_id", "source", "title", "published", "url", "page"]].to_dict(),

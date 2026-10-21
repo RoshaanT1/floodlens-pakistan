@@ -1,0 +1,12 @@
+# Insight Agent API for the dashboard's Ask page (local only, 127.0.0.1:8001).
+[Unit]
+Description=FloodLens Insight Agent API
+
+[Service]
+WorkingDirectory=/home/roshaan/Desktop/Project/Competition/hackInsight/backend
+ExecStart=/home/roshaan/Desktop/Project/Competition/hackInsight/backend/.venv-insight/bin/uvicorn src.insight_api:app --host 127.0.0.1 --port 8001
+Restart=on-failure
+RestartSec=15
+
+[Install]
+WantedBy=default.target

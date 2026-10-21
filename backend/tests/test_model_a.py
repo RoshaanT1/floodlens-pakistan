@@ -110,3 +110,31 @@ def test_train_writes_loadable_artifact_and_log(tmp_path, monkeypatch):
     if report["chosen"]:
         model, meta = model_a.load_current()
         assert meta["label"].startswith("validation-stage")
+
+
+def test_test_run_needs_flag_and_runs_only_once(tmp_path, monkeypatch):
+    """Fixture extended into 2026; checks the guard rails of the one-off test run."""
+    import pandas as pd
+    db = _fixture_db(tmp_path / "a.duckdb")
+    with duckdb.connect(str(db)) as con:  # copy 2025 Jan-Sep rows into 2026 as made-up test rows
+        for t in ("rain_district_day", "labels"):
+            con.execute(f"INSERT INTO {t} SELECT * REPLACE (date_utc + INTERVAL 365 DAY AS date_utc) "
+                        f"FROM {t} WHERE date_utc BETWEEN DATE '2025-01-01' AND DATE '2025-09-30'")
+        con.execute("INSERT INTO forecast_day SELECT * REPLACE (date_utc + INTERVAL 365 DAY AS date_utc) "
+                    "FROM forecast_day WHERE date_utc BETWEEN DATE '2025-01-01' AND DATE '2025-09-30'")
+    for k, v in {"MODEL_DIR": tmp_path / "models", "OPT_LOG": tmp_path / "opt.md", "ROOT": tmp_path,
+                 "TEST_OUT": tmp_path / "test.json"}.items():
+        monkeypatch.setattr(model_a, k, v)
+    (tmp_path / "docs").mkdir()
+    model_a.features(db)
+    model_a.train(db)
+    if model_a.load_current() is None:
+        pytest.skip("fixture model did not beat climatology; no artifact to test")
+    monkeypatch.delenv("FLOODLENS_RUN_TEST", raising=False)
+    with pytest.raises(SystemExit):
+        model_a.test(db)
+    monkeypatch.setenv("FLOODLENS_RUN_TEST", "1")
+    report = model_a.test(db)
+    assert report["n_test"] > 0 and "24h" in report["scores"]["model"]["all"]
+    with pytest.raises(SystemExit):  # second run refused
+        model_a.test(db)

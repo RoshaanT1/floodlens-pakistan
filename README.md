@@ -3,11 +3,9 @@
 **District heavy-rain warnings one to three days ahead, plus a weekly food-price watch,
 for disaster planners in Pakistan.** HackInsight 2026, team Spark H.
 
-> Status on 21 Oct 2026: the pipeline, dashboard and every model and analysis step are
-> built and tested. Model A's validation results are still pending, because the 2015–2026
-> satellite rainfall download (IMERG) only became possible on 21 Oct. Numbers appear in
-> [Results](#results) once `src.model_a train` has run. Nothing below is a placeholder
-> number.
+> Status on 21 Oct 2026: pipeline, dashboard, Model A (validation stage) and Insight Agent
+> are running. The live dashboard shows Model A probabilities for all 160 districts every hour.
+> The test set (Jan to Sep 2026) is run once by the team; everything below is validation.
 
 ## The problem
 
@@ -66,8 +64,10 @@ NDMA/PDMA advisories and call Rescue 1122 in an emergency.
   2026, run once. Code refuses to load test rows unless `FLOODLENS_RUN_TEST=1`.
 - **Model swaps never touch flow code:** the flow scores with whatever
   `backend/models/model_a/current.json` points to.
-- **Insight Agent (in progress):** NDMA monsoon 2025 sitreps and advisories, split into
-  sections and indexed with a multilingual embedding model (Urdu-capable) in FAISS.
+- **Insight Agent:** NDMA sitreps and advisories split into sections and indexed with a
+  multilingual embedding model (FAISS). Answers quote sections with their ids, insert numbers from
+  tables with row ids, say "I don't know" below a tested retrieval threshold, put Rescue 1122 and
+  NDMA/PDMA first for emergencies, and switch to Urdu (Ask page). Tests: `tests/test_insight.py`.
 
 ## How to run
 
@@ -98,22 +98,46 @@ make export      # frontend/public/data/status.json
 .venv/bin/python -m flows.hourly serve          # or the systemd units in deploy/
 .venv/bin/python -m flows.export_runs           # docs/prefect_runs.csv for the run window
 
+# Insight Agent (separate venv; builds the document index once, ~8 min on CPU)
+python3 -m venv .venv-insight && .venv-insight/bin/pip install -r requirements-insight.txt
+.venv-insight/bin/python -m src.doc_index build
+.venv-insight/bin/uvicorn src.insight_api:app --port 8001   # serves the dashboard's Ask page
+
 # frontend
-cd ../frontend && npm install && npx vite       # open /live
+cd ../frontend && npm install && npx vite       # open /live and /ask
 ```
 
 ## Results
 
-*Pending: filled in from `backend/docs/model_a_validation.json` and
-`backend/docs/model_a_analysis.md` after training.* Validation-stage results only; the test
-set (Jan–Sep 2026) is run once by the team and reported separately.
+Validation, 1 Jul to 31 Dec 2025 (29,440 district-days per lead; heavy rain on 2.6% of them).
+Brier score with 95% day-block bootstrap intervals; lower is better. Model probabilities are
+Platt-calibrated on validation, cross-fitted by ISO week so no day is scored by a calibrator that
+saw it. Sources: `backend/docs/model_a_validation.json`, `backend/docs/model_a_analysis.md`.
 
-| Validation, 24 h | Brier [95% CI] |
-| --- | --- |
-| Climatology baseline | pending |
-| Raw forecast cut at threshold | pending |
-| Logistic regression (calibrated) | pending |
-| Gradient boosting (calibrated) | pending |
+| Brier [95% CI] | 24 h | 48 h | 72 h |
+| --- | --- | --- | --- |
+| Climatology (declared baseline) | 0.0249 [0.0188, 0.0320] | 0.0249 [0.0188, 0.0320] | 0.0249 [0.0188, 0.0320] |
+| Raw forecast cut at threshold | 0.0290 [0.0217, 0.0371] | 0.0297 [0.0224, 0.0378] | 0.0294 [0.0226, 0.0376] |
+| Logistic regression | 0.0238 [0.0182, 0.0305] | 0.0244 [0.0186, 0.0310] | 0.0243 [0.0185, 0.0308] |
+| **Gradient boosting (chosen)** | **0.0233 [0.0177, 0.0297]** | **0.0236 [0.0180, 0.0300]** | **0.0235 [0.0180, 0.0298]** |
+
+- **Better than climatology at every lead.** Paired bootstrap of the difference (GBM − climatology)
+  at 24 h: −0.0016 [−0.0025, −0.0008], so the gain is larger than day-to-day noise (also at 48 h and 72 h).
+- **The gain holds in monsoon months** (Jun–Sep validation days: Brier skill score +0.058) and in
+  every group: provinces, mountain/plain, coastal/inland, 2022 flood-prone or not. **Weakest group:
+  Azad Kashmir** (skill +0.015).
+- **The raw forecast cut at the threshold is worse than climatology**: centroid forecasts rarely
+  reach a wettest-pixel threshold, which is why calibration matters.
+- **Buner, 15 Aug 2025:** IMERG's wettest Buner pixel was 43 mm, under Buner's 57.5 mm
+  threshold, so the day is labelled 0 even though a flash flood killed more than 100 people there (126 listed in NDMA Sitrep No. 52). The model gave
+  0.15 at 24 h, about 4× climatology (0.039). The limit here is the label: a daily 0.1° satellite
+  estimate smooths out a local cloudburst.
+- **Local validation (E2):** with the 0.5 flag rule fixed before results, only 1 district
+  (Diamir) is ever flagged at 24 h in Jul–Sep 2025, against 125 districts named in NDMA's 87
+  monsoon 2025 sitreps. With a 2.6% base rate, 0.5 is too high a bar; a lower rule has to be set
+  by the team and reported as chosen after seeing validation.
+- **Model B:** quantile gradient boosting did not beat "no change" on validation (MAE 1.667 vs
+  1.665 percentage points; 80% interval coverage 0.89). Prices ship as data plus baseline.
 
 Data assembled so far:
 - 160 districts (OCHA admin-2), with elevation, coastal and 2022 flood-prone attributes;

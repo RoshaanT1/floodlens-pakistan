@@ -100,6 +100,64 @@ def risk(con) -> dict | None:
     return out
 
 
+MARKET_GROUPS = {"staples": {1, 2, 3, 4, 10, 12, 13, 14, 15, 17, 18, 19, 20, 24, 25, 26, 27, 29},
+                 "perishables": {5, 6, 7, 8, 9, 11, 16, 21, 22, 23, 28},
+                 "fuel": {41, 42, 43, 47, 48, 49}}
+CITY_DISTRICT = {"Karachi": "South Karachi", "D.I. Khan": "D. I. Khan"}  # SPI city -> OCHA district
+
+
+def market(con) -> dict | None:
+    """B6: latest PBS SPI prices per city with the previous 52 weeks' 10th-90th percentile range.
+
+    The range is history, not a forecast. Item names come from the newest week (PBS xlsx), whose
+    text is clean; older PDF-parsed weeks only contribute numbers.
+    """
+    group_of = {i: g for g, items in MARKET_GROUPS.items() for i in items}
+    keep = sorted(group_of)
+    rows = con.execute(f"""
+        WITH latest AS (SELECT max(week_end) AS w FROM spi_price),
+        names AS (SELECT item_no, any_value(item) AS item, any_value(unit) AS unit FROM spi_price, latest
+                  WHERE week_end = latest.w GROUP BY item_no),
+        cur AS (SELECT city, item_no, avg_pkr, row_id, quality_flags FROM spi_price, latest WHERE week_end = latest.w),
+        prev AS (SELECT city, item_no, avg_pkr FROM spi_price, latest WHERE week_end = latest.w - INTERVAL 7 DAY),
+        hist AS (SELECT city, item_no, quantile_cont(avg_pkr, 0.1) AS p10, quantile_cont(avg_pkr, 0.9) AS p90,
+                        count(avg_pkr) AS n_weeks
+                 FROM spi_price, latest WHERE week_end < latest.w AND week_end >= latest.w - INTERVAL 364 DAY
+                 GROUP BY ALL)
+        SELECT c.city, c.item_no, n.item, n.unit, c.avg_pkr, p.avg_pkr, h.p10, h.p90, h.n_weeks, c.row_id,
+               c.quality_flags, (SELECT w FROM latest)
+        FROM cur c JOIN names n USING (item_no) LEFT JOIN prev p USING (city, item_no)
+        LEFT JOIN hist h USING (city, item_no)
+        WHERE c.item_no IN ({",".join(map(str, keep))})
+        ORDER BY c.city, c.item_no""").fetchall()
+    if not rows:
+        return None
+    out: dict = {"week_end": rows[0][11].isoformat(), "source": "PBS weekly SPI, city-wise annex",
+                 "range_label": "10th-90th percentile of the previous 52 weeks (history, not a forecast)",
+                 "cities": defaultdict(list)}
+    for city, no, item, unit, avg, prev, p10, p90, n, row_id, flags, _ in rows:
+        r = lambda v: None if v is None else round(float(v), 2)  # noqa: E731
+        out["cities"][city].append({
+            "item_no": no, "item": item, "unit": unit, "group": group_of[no], "avg_pkr": r(avg),
+            "wow_pct": None if avg is None or not prev else round((avg / prev - 1) * 100, 2),
+            "p10": r(p10), "p90": r(p90), "n_weeks": n, "row_id": row_id, "quality_flags": flags})
+    # nearest SPI city to every district, by centroid distance (km, equirectangular)
+    cents = dict(con.execute("SELECT name, [centroid_lat::DOUBLE, centroid_lon::DOUBLE] FROM districts").fetchall())
+    city_xy = {c: cents.get(CITY_DISTRICT.get(c, c)) for c in out["cities"]}
+    city_xy = {c: xy for c, xy in city_xy.items() if xy}
+
+    def km(a, b):
+        import math
+        x = (b[1] - a[1]) * math.cos(math.radians((a[0] + b[0]) / 2))
+        return 111.2 * math.hypot(b[0] - a[0], x)
+    out["nearest_city"] = {}
+    for did, lat, lon in con.execute(
+            "SELECT district_id, centroid_lat::DOUBLE, centroid_lon::DOUBLE FROM districts").fetchall():
+        city, xy = min(city_xy.items(), key=lambda kv: km((lat, lon), kv[1]))
+        out["nearest_city"][did] = {"city": city, "km": round(km((lat, lon), xy))}
+    return out
+
+
 def build(db_path=DB_PATH, out: Path = OUT) -> Path:
     with duckdb.connect(str(db_path), read_only=True) as con:
         have = _tables(con)
@@ -111,6 +169,7 @@ def build(db_path=DB_PATH, out: Path = OUT) -> Path:
             "quality": quality(con) if "quality_log" in have else [],
             "live_forecast": live_forecast(con) if "forecast_live" in have else None,
             "risk": risk(con) if "risk_live" in have else None,
+            "market": market(con) if {"spi_price", "districts"} <= have else None,
             "pipeline": json.loads(FLOW_STATUS.read_text()) if FLOW_STATUS.exists() else None,
         }
     out.parent.mkdir(parents=True, exist_ok=True)

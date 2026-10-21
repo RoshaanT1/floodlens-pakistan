@@ -57,11 +57,17 @@ and where to issue local warnings.</p>
 
 <h2>Validation results (1 Jul – 31 Dec 2025; test set run once separately)</h2>
 <table>
-  <tr><th>Brier score, 24 h [95% CI]</th><th>Climatology (baseline)</th><th>Raw forecast cut</th><th>Logistic regression</th><th>Gradient boosting</th></tr>
-  <tr><td>All districts</td><td class="pending">pending</td><td class="pending">pending</td><td class="pending">pending</td><td class="pending">pending</td></tr>
-  <tr><td>Monsoon months (Jul–Sep)</td><td class="pending">pending</td><td class="pending">pending</td><td colspan="2" class="pending">pending</td></tr>
+  <tr><th>Brier [95% CI], lower is better</th><th>24 h</th><th>48 h</th><th>72 h</th></tr>
+  <tr><td>Climatology (declared baseline)</td><td>0.0249 [0.0188, 0.0320]</td><td>0.0249</td><td>0.0249</td></tr>
+  <tr><td>Raw forecast cut at threshold</td><td>0.0290 [0.0217, 0.0371]</td><td>0.0297</td><td>0.0294</td></tr>
+  <tr><td>Logistic regression</td><td>0.0238 [0.0182, 0.0305]</td><td>0.0244</td><td>0.0243</td></tr>
+  <tr><td><b>Gradient boosting (chosen)</b></td><td><b>0.0233 [0.0177, 0.0297]</b></td><td><b>0.0236</b></td><td><b>0.0235</b></td></tr>
 </table>
-<p class="small">Weakest group and Buner case study (14–15 Aug 2025): <span class="pending">pending</span>.</p>
+<p class="small">Paired bootstrap, GBM − climatology at 24 h: −0.0016 [−0.0025, −0.0008]. The gain holds in
+monsoon months (skill +0.058) and in every province and terrain group; weakest: Azad Kashmir (+0.015).
+Buner, 15 Aug 2025: IMERG's wettest pixel (43 mm) stayed under Buner's threshold (57.5 mm), so the
+label is 0 despite the deadly flash flood; the model said 0.15, about 4× climatology. Model B did not
+beat "no change" (MAE 1.667 vs 1.665 pp).</p>
 
 <div class="cols">
 <div>
@@ -82,6 +88,7 @@ and where to issue local warnings.</p>
   <li>Predicts heavy rain, not floods or damage; not an official warning.</li>
   <li>Forecast inputs are taken at district centroids; labels use the wettest pixel.</li>
   <li>The run history misses part of the window (first run 01:28 PKT; laptop slept 04:33–06:10).</li>
+  <li>Daily satellite rain smooths out local cloudbursts (the Buner case), so labels miss some deadly events.</li>
   <li>Urdu-only questions retrieve less well than English ones.</li>
 </ul>
 <h2>Impact</h2>

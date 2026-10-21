@@ -15,5 +15,11 @@ export default defineConfig({
       visualEditAgent: true
     }),
     react(),
-  ]
+  ],
+  server: {
+    // Insight Agent (backend/src/insight_api.py) runs locally on :8001; /api is taken by Base44
+    proxy: {
+      '/insight': { target: 'http://127.0.0.1:8001', rewrite: (path) => path.replace(/^\/insight/, '/api') },
+    },
+  },
 });

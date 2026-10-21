@@ -1,0 +1,47 @@
+{
+  "n_train": 82292,
+  "n_validation": 7774,
+  "features": [
+    "chg_1w",
+    "chg_4w",
+    "chg_12w",
+    "chg_next_last_year",
+    "group_code",
+    "fuel_chg_1w",
+    "rain_anom_7d_mm",
+    "item_no"
+  ],
+  "by_group": {
+    "all": {
+      "n": 7774,
+      "mae_no_change": 1.6651269024627995,
+      "mae_gbm_median": 1.667134977539388,
+      "coverage_80": 0.8918188834576795
+    },
+    "staples": {
+      "n": 2727,
+      "mae_no_change": 0.581758956822551,
+      "mae_gbm_median": 0.582057890353286,
+      "coverage_80": 0.8811881188118812
+    },
+    "perishables": {
+      "n": 1683,
+      "mae_no_change": 5.542384217845368,
+      "mae_gbm_median": 5.540098530340521,
+      "coverage_80": 0.8425430778371955
+    },
+    "fuel": {
+      "n": 916,
+      "mae_no_change": 1.9931479841968285,
+      "mae_gbm_median": 2.0134999448712207,
+      "coverage_80": 0.7489082969432315
+    },
+    "other": {
+      "n": 2448,
+      "mae_no_change": 0.08361261124700006,
+      "mae_gbm_median": 0.08361261124700006,
+      "coverage_80": 0.9910130718954249
+    }
+  },
+  "beats_no_change_on_validation": false
+}

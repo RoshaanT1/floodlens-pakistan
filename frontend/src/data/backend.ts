@@ -16,6 +16,20 @@ export type QualityDecision = {
   decided_at_utc: string;
 };
 
+export type MarketRow = {
+  item_no: number;
+  item: string;
+  unit: string;
+  group: "staples" | "perishables" | "fuel";
+  avg_pkr: number | null;
+  wow_pct: number | null;
+  p10: number | null;
+  p90: number | null;
+  n_weeks: number | null;
+  row_id: string;
+  quality_flags: string | null;
+};
+
 export type BackendStatus = {
   generated_at_utc: string;
   sources: {
@@ -45,6 +59,14 @@ export type BackendStatus = {
     model_version: string;
     label: string;
     by_district: Record<string, Record<"24h" | "48h" | "72h", { p: number; row_id: string; date_utc: string }>>;
+  } | null;
+  /** B6: real PBS SPI prices; the range is history, not a forecast. */
+  market?: {
+    week_end: string;
+    source: string;
+    range_label: string;
+    cities: Record<string, MarketRow[]>;
+    nearest_city: Record<string, { city: string; km: number }>;
   } | null;
   pipeline?: {
     last_success_utc: string;

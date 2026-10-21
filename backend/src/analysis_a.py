@@ -42,7 +42,9 @@ def ndma_mentions(db_path=DB_PATH) -> pd.DataFrame:
 
     with duckdb.connect(str(db_path), read_only=True) as con:
         d = con.execute("SELECT district_id, name, province FROM districts").df()
-    rows = [r for r in manifest.read_manifest() if r["source"] == "ndma_sitrep"]
+        monsoon_2025 = {p for (p,) in con.execute(
+            "SELECT path FROM documents WHERE source = 'ndma_sitrep' AND title ILIKE '%monsoon 2025%'").fetchall()}
+    rows = [r for r in manifest.read_manifest() if r["source"] == "ndma_sitrep" and r["path"] in monsoon_2025]
     hits: Counter = Counter()
     for r in rows:
         try:
@@ -120,7 +122,7 @@ def report(db_path=DB_PATH) -> str:
         flagged = getattr(r, model_col) >= FLAG_P
         outcome = {(True, 1): "hit", (False, 1): "miss", (True, 0): "false alarm", (False, 0): "correct quiet"}[
             (bool(flagged), int(r.label))]
-        lines.append(f"| {r.date_utc} | {r.lead_days} | {r.precip_sum_mm:.1f} | {r.threshold_mm:.1f} | "
+        lines.append(f"| {pd.Timestamp(r.date_utc).date()} | {r.lead_days} | {r.precip_sum_mm:.1f} | {r.threshold_mm:.1f} | "
                      f"{r.wettest_mm:.1f} | {int(r.label)} | {getattr(r, model_col):.3f} | {r.p_climatology:.3f} | {outcome} |")
     if b.empty:
         lines.append("| no Buner rows for these days (missing forecast or label) | | | | | | | | |")

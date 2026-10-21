@@ -35,3 +35,21 @@ def test_risk_export_carries_row_ids_and_label(tmp_path):
         r = export_frontend.risk(con)
     assert r["label"] == "validation-stage model"
     assert r["by_district"]["PK1"]["24h"] == {"p": 0.12, "row_id": "PK1_2026-10-22_L1", "date_utc": "2026-10-22"}
+
+
+def test_market_has_history_range_and_nearest_city(tmp_path):
+    import pandas as pd
+    db = tmp_path / "m.duckdb"
+    weeks = pd.date_range("2025-10-02", periods=54, freq="7D").date
+    prices = pd.DataFrame([{"city": "Lahore", "item_no": 1, "item": "Wheat Flour Bag", "unit": "20 Kg",
+                            "week_end": w, "avg_pkr": 100.0 + i, "row_id": f"Lahore_1_{w}", "quality_flags": None}
+                           for i, w in enumerate(weeks)])
+    with duckdb.connect(str(db)) as con:
+        con.execute("CREATE TABLE spi_price AS SELECT * FROM prices")
+        con.execute("""CREATE TABLE districts AS SELECT * FROM (VALUES ('PK1','Lahore',31.5,74.3),
+                       ('PK2','Kasur',31.1,74.4)) t(district_id, name, centroid_lat, centroid_lon)""")
+        m = export_frontend.market(con)
+    row = m["cities"]["Lahore"][0]
+    assert row["avg_pkr"] == 153.0 and row["wow_pct"] == round((153 / 152 - 1) * 100, 2)
+    assert row["p10"] < row["p90"] < 153.0  # range is from earlier weeks only
+    assert m["nearest_city"]["PK2"]["city"] == "Lahore" and "history" in m["range_label"]

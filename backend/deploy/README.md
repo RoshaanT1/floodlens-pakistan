@@ -9,6 +9,7 @@ systemctl --user enable --now floodlens-prefect floodlens-flow
 loginctl enable-linger "$USER"     # optional: keep running when logged out / after reboot without login
 ```
 
+- Optional: `floodlens-insight.service` serves the Ask page's API on 127.0.0.1:8001 (needs `.venv-insight`).
 - Status: `systemctl --user status floodlens-flow`, logs: `journalctl --user -u floodlens-flow -f`
 - Stop: `systemctl --user stop floodlens-flow floodlens-prefect` (also releases the sleep inhibitor)
 - Both restart on failure. While `floodlens-flow` runs, idle suspend is blocked (`systemd-inhibit --list`

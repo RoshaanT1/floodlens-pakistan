@@ -53,6 +53,22 @@ access fails", and access works for the team; only this machine lacks the login.
 
 Tests: **56 passing** (`make test`). `make data` passes on the current snapshot (17 s, 767 MB peak).
 
+## 2b. Added on Wed 21 Oct morning
+
+| Task | Status |
+| --- | --- |
+| D4 IMERG | Earthdata token in `.env`; 4,307 of 4,311 days (2015-01-01 to 2026-10-16) via the Earthdata Cloud OPeNDAP crop, after gpm1.gesdisc blocked this machine |
+| A2/A3/A4 | trained; GBM chosen; artifact `models/model_a/20261021T0446Z_gbm` (in git); live scoring in every hourly run |
+| A5/A6/E2 | `docs/model_a_analysis.md` (groups, Buner, NDMA comparison; E2 flag rule needs a team decision) |
+| E3 | `FLOODLENS_RUN_TEST=1 python -m src.model_a test`: written and tested on fixtures, **not run** |
+| B4/B5/B6 | Model B did not beat "no change" (rejected, logged); Market watch panel shows real PBS prices against their 52-week range, with the nearest market per district |
+| P6 | replay of 10–20 Aug 2025 in `data/replay.duckdb` and `replay.json`, labelled |
+| P7 | 160-district map on the Live data page |
+| R3/R4/R5 | Insight Agent with tests; **Ask** page with an English/Urdu toggle, served by `floodlens-insight` (systemd, 127.0.0.1:8001) |
+| Q3 | re-issued IMERG days are refetched and flagged; the earlier value is kept |
+| X1/X2/X3 | README with results and business model; one-page `docs/Summary.pdf` |
+| Git | Co-Authored-By trailers removed from `main` and this branch at the user's request (history rewritten and force-pushed; teammates must `git reset --hard origin/main`) |
+
 ## 3. Flow status
 
 See the "Flow log" at the end for the run-by-run record.
@@ -103,7 +119,12 @@ Scheduled runs appear in the UI after any reinstall.
 
 ## 4. Validation results
 
-None yet; this needs IMERG (section 1). After IMERG is in:
+**Update 21 Oct 09:50:** IMERG fetched (Earthdata token, cloud OPeNDAP), Model A trained. GBM beats
+climatology at 24/48/72 h (24 h: 0.0233 vs 0.0249; paired bootstrap of the difference −0.0016
+[−0.0025, −0.0008]), also in monsoon months. Full tables: README "Results",
+`docs/model_a_validation.json`, `docs/model_a_analysis.md`. Model B did not beat "no change".
+
+Original note (before IMERG): none yet; this needs IMERG (section 1). After IMERG is in:
 `make data && .venv/bin/python -m src.model_a train && .venv/bin/python -m src.analysis_a report`
 writes `docs/model_a_validation.json`, rows in `docs/optimisation_log.md` and
 `docs/model_a_analysis.md`. `train` reports honestly when no model beats climatology: it writes
@@ -158,6 +179,9 @@ no artifact, and the dashboard keeps showing raw forecasts only.
   `::test_features_never_see_rain_after_cutoff`. For target day D at lead N, the earliest
   issue time is (D−N) 00:00 UTC, and the newest observed day allowed is D−N−2.
 - The test split is locked: `model_a.split(..., "test")` raises unless `FLOODLENS_RUN_TEST=1`.
+- **E3, run once (team):** `FLOODLENS_RUN_TEST=1 .venv/bin/python -m src.model_a test` scores
+  Jan to Sep 2026 with the frozen artifact (no refit, no recalibration) and writes
+  `docs/model_a_test.json`. A second run is refused while that file exists.
 
 ## 8. Reproduce
 

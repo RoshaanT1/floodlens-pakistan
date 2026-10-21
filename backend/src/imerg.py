@@ -162,14 +162,21 @@ def download(s: requests.Session, query: str, tries: int = 5) -> bytes:
     raise AssertionError("unreachable")
 
 
-def fetched_days() -> set[date]:
-    """Days already stored, whichever endpoint served them."""
-    days = set()
+REVISION_WINDOW_DAYS = 60  # Q3: re-check recent days for a newer granule (e.g. V07B -> V07C)
+
+
+def stored_granules() -> dict[date, set[str]]:
+    """{day: granule file names already stored}, whichever endpoint served them."""
+    out: dict[date, set[str]] = {}
     for r in manifest.read_manifest():
         if r["source"] == SOURCE:
-            m = re.search(r"3IMERG\.(\d{8})-", r["path"])
-            days.add(datetime.strptime(m.group(1), "%Y%m%d").date())
-    return days
+            m = re.search(r"(3B-DAY-L\.MS\.MRG\.3IMERG\.(\d{8})-[^/]+?\.nc4)", r["path"])
+            out.setdefault(datetime.strptime(m.group(2), "%Y%m%d").date(), set()).add(m.group(1))
+    return out
+
+
+def fetched_days() -> set[date]:
+    return set(stored_granules())
 
 
 LOCK = ROOT / "data" / ".imerg_fetch.lock"
@@ -195,7 +202,8 @@ def fetch(start: date, end: date, workers: int, max_days: int | None = None, end
         print("another IMERG fetch is running; skipping")
         return
     s = session()
-    done = fetched_days()
+    stored = stored_granules()
+    recent = end - timedelta(days=REVISION_WINDOW_DAYS)
     todo = []
     month = start.replace(day=1)
     while month <= end:
@@ -203,7 +211,11 @@ def fetch(start: date, end: date, workers: int, max_days: int | None = None, end
                    else list_month(s, month.year, month.month))
         for day, filename in sorted(listing.items()):
             q = build_cloud_query(filename) if endpoint == "cloud" else build_query(filename, day)
-            if start <= day <= end and day not in done:
+            new_day = day not in stored
+            revised = day in stored and day >= recent and filename not in stored[day]
+            if start <= day <= end and (new_day or revised):
+                if revised:
+                    print(f"  {day}: NASA lists {filename}, stored {sorted(stored[day])}; fetching revision")
                 todo.append((day, filename, q))
         month = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
     if max_days is not None and len(todo) > max_days:

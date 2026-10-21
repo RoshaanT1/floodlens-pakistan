@@ -7,6 +7,7 @@ import EmptyState from "@/components/common/EmptyState";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { backendStatus, formatPkt } from "@/data/backend";
 import LiveMap, { METRIC_LABEL, type LiveMetric } from "@/components/live/LiveMap";
+import MarketWatch from "@/components/live/MarketWatch";
 
 const LEADS = ["1", "2", "3"] as const;
 const HORIZONS = ["24h", "48h", "72h"] as const;
@@ -18,7 +19,15 @@ const cell = "px-3 py-1.5 text-sm tabular-nums";
 export default function LiveData() {
   const status = backendStatus;
   const [sortBy, setSortBy] = useState<"rain" | "name">("rain");
-  const [metric, setMetric] = useState<LiveMetric>("rain1");
+  const [metric, setMetric] = useState<LiveMetric>(status?.risk ? "p24" : "rain1");
+  // default market: the SPI city nearest the district with the highest 24 h probability
+  const topDistrictCity = useMemo(() => {
+    if (!status?.risk || !status.market) return undefined;
+    const best = Object.entries(status.risk.by_district).sort(
+      (a, b) => (b[1]["24h"]?.p ?? 0) - (a[1]["24h"]?.p ?? 0),
+    )[0];
+    return best ? status.market.nearest_city[best[0]]?.city : undefined;
+  }, [status]);
   const metrics: LiveMetric[] = status?.risk
     ? ["p24", "p48", "p72", "rain1", "rain2", "rain3"]
     : ["rain1", "rain2", "rain3"];
@@ -124,6 +133,7 @@ export default function LiveData() {
                     <TableRow className="border-border hover:bg-transparent">
                       <TableHead className={head}>District</TableHead>
                       <TableHead className={head}>Province</TableHead>
+                      <TableHead className={head}>Nearest market</TableHead>
                       {LEADS.map((l) => (
                         <TableHead key={l} className={`${head} text-right`}>
                           Rain +{l} d (mm)
@@ -141,6 +151,11 @@ export default function LiveData() {
                       <TableRow key={r.id} className="border-border">
                         <TableCell className="px-3 py-1.5 text-sm font-medium">{r.name}</TableCell>
                         <TableCell className="px-3 py-1.5 text-sm text-muted-foreground">{r.province}</TableCell>
+                        <TableCell className="px-3 py-1.5 text-sm text-muted-foreground">
+                          {status.market?.nearest_city[r.id]
+                            ? `${status.market.nearest_city[r.id].city} (${status.market.nearest_city[r.id].km} km)`
+                            : "—"}
+                        </TableCell>
                         {r.rain.map((v, i) => (
                           <TableCell key={i} className={`${cell} text-right`}>
                             {v == null ? "—" : v.toFixed(1)}
@@ -148,7 +163,7 @@ export default function LiveData() {
                         ))}
                         {r.risk.map((v, i) => (
                           <TableCell key={i} className={`${cell} text-right`} title={v?.row_id}>
-                            {v == null ? "—" : `${Math.round(v.p * 100)}%`}
+                            {v == null ? "—" : v.p > 0 && v.p < 0.01 ? "<1%" : `${Math.round(v.p * 100)}%`}
                           </TableCell>
                         ))}
                       </TableRow>
@@ -157,6 +172,7 @@ export default function LiveData() {
                 </Table>
               </div>
             </Panel>
+            <MarketWatch status={status} defaultCity={topDistrictCity} />
           </>
         )}
       </div>

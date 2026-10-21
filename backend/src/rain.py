@@ -59,17 +59,22 @@ def aggregate_day(index: dict[str, np.ndarray], precip: np.ndarray, cnt: np.ndar
     return rows
 
 
-def imerg_days() -> list[tuple[date, dict]]:
-    """Newest manifest row per IMERG day, sorted by day."""
-    latest: dict[date, dict] = {}
+def imerg_versions() -> dict[date, list[dict]]:
+    """All manifest rows per IMERG day, oldest fetch first."""
+    out: dict[date, list[dict]] = {}
     for r in manifest.read_manifest():
         if r["source"] != imerg.SOURCE:
             continue
         m = re.search(r"3IMERG\.(\d{8})-", r["path"])
-        day = datetime.strptime(m.group(1), "%Y%m%d").date()
-        if day not in latest or r["fetched_at_utc"] > latest[day]["fetched_at_utc"]:
-            latest[day] = r
-    return sorted(latest.items())
+        out.setdefault(datetime.strptime(m.group(1), "%Y%m%d").date(), []).append(r)
+    for rows in out.values():
+        rows.sort(key=lambda r: r["fetched_at_utc"])
+    return out
+
+
+def imerg_days() -> list[tuple[date, dict]]:
+    """Newest manifest row per IMERG day, sorted by day."""
+    return sorted((day, rows[-1]) for day, rows in imerg_versions().items())
 
 
 def build(db_path=DB_PATH) -> int:
@@ -90,6 +95,17 @@ def build(db_path=DB_PATH) -> int:
 
     df = pd.DataFrame(rows)
     df["low_confidence"] = df["min_sample_cnt"] < LOW_SAMPLE_CNT
+    # Q3: a day NASA re-issued keeps the earlier wettest-pixel value next to the new one
+    df["revised_from_mm"] = np.nan
+    for day, versions in imerg_versions().items():
+        if len(versions) < 2:
+            continue
+        ds = imerg.open_day(ROOT / versions[-2]["path"])
+        old = pd.DataFrame(aggregate_day(index, ds.precipitation.values[0], None, day)).set_index("row_id")
+        m = df["date_utc"] == day
+        df.loc[m, "revised_from_mm"] = df.loc[m, "row_id"].map(old["wettest_mm"]).to_numpy()
+    df["revised"] = df["revised_from_mm"].notna() & (
+        (df["revised_from_mm"] - df["wettest_mm"]).abs() > 1e-6)
     with duckdb.connect(str(db_path)) as con:
         con.execute("CREATE OR REPLACE TABLE rain_district_day AS SELECT * FROM df ORDER BY row_id")
         n = con.execute("SELECT count(*) FROM rain_district_day").fetchone()[0]
