@@ -29,3 +29,4 @@ data/flow_status.json
 .venv-insight/
 data/clean/ne_coastline/
 data/.imerg_fetch.lock
+data/insight_url.txt

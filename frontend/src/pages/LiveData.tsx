@@ -9,6 +9,7 @@ import { backendStatus, formatPkt } from "@/data/backend";
 import LiveMap, { METRIC_LABEL, type LiveMetric } from "@/components/live/LiveMap";
 import MarketWatch from "@/components/live/MarketWatch";
 import FreshnessQuality from "@/components/live/FreshnessQuality";
+import { KpiTiles, RunDetails, TopDistricts } from "@/components/live/LiveOverview";
 
 const LEADS = ["1", "2", "3"] as const;
 const HORIZONS = ["24h", "48h", "72h"] as const;
@@ -29,9 +30,11 @@ export default function LiveData() {
     )[0];
     return best ? status.market.nearest_city[best[0]]?.city : undefined;
   }, [status]);
-  const metrics: LiveMetric[] = status?.risk
-    ? ["p24", "p48", "p72", "rain1", "rain2", "rain3"]
-    : ["rain1", "rain2", "rain3"];
+  const metrics: LiveMetric[] = [
+    ...(status?.risk ? (["p24", "p48", "p72"] as LiveMetric[]) : []),
+    "rain1", "rain2", "rain3",
+    ...(status?.district_info ? (["obs7", "flood2022"] as LiveMetric[]) : []),
+  ];
 
   const rows = useMemo(() => {
     if (!status) return [];
@@ -54,7 +57,7 @@ export default function LiveData() {
       <div className="mx-auto w-full max-w-[1240px] space-y-3 p-3 sm:p-4">
         <PageHeader
           title="Live data"
-          subtitle="Straight from the hourly pipeline. Nothing on this page is sample data."
+          subtitle="Heavy-rain risk for Pakistan's 160 districts, straight from the hourly pipeline. Nothing on this page is sample data. Not an official warning: follow NDMA and PDMA."
         />
 
         {!status ? (
@@ -65,46 +68,42 @@ export default function LiveData() {
           />
         ) : (
           <>
-            <Panel title="Pipeline run">
-              <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-                <dt className="text-muted-foreground">Status published</dt>
-                <dd className="tabular-nums">{formatPkt(status.generated_at_utc)}</dd>
-                {status.pipeline && (
-                  <>
-                    <dt className="text-muted-foreground">Last successful run</dt>
-                    <dd className="tabular-nums">{formatPkt(status.pipeline.last_success_utc)}</dd>
-                    {Object.entries(status.pipeline.fetch).map(([source, result]) => (
-                      <div key={source} className="contents">
-                        <dt className="text-muted-foreground">{source}</dt>
-                        <dd>{result}</dd>
-                      </div>
+            <KpiTiles status={status} names={Object.fromEntries(status.districts.map((d) => [d.id, d.name]))} />
+
+            <div className="grid gap-3 lg:grid-cols-3">
+              <Panel
+                className="lg:col-span-2"
+                title="District map"
+                subtitle={status.risk ? `Model A · ${status.risk.label}` : "Raw forecast rain; Model A not trained yet"}
+                action={
+                  <select
+                    value={metric}
+                    onChange={(e) => setMetric(e.target.value as LiveMetric)}
+                    className="rounded border border-border bg-background px-2 py-1 text-xs"
+                    aria-label="Map layer"
+                  >
+                    {metrics.map((m) => (
+                      <option key={m} value={m}>
+                        {METRIC_LABEL[m]}
+                      </option>
                     ))}
-                  </>
-                )}
-              </dl>
-            </Panel>
+                  </select>
+                }
+              >
+                <LiveMap status={status} metric={metric} />
+              </Panel>
+              <Panel
+                title={status.risk ? "Highest risk, next 24 h" : "Most forecast rain, +1 day"}
+                subtitle="Probability that rain exceeds the district's own 95th percentile"
+              >
+                <TopDistricts status={status} />
+              </Panel>
+            </div>
 
             <FreshnessQuality status={status} />
 
-            <Panel
-              title="Map"
-              subtitle={status.risk ? `Model A: ${status.risk.label}` : "Raw forecast rain; Model A not trained yet"}
-              action={
-                <div className="flex flex-wrap gap-1">
-                  {metrics.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setMetric(m)}
-                      className={`rounded border border-border px-2 py-1 text-xs ${m === metric ? "bg-accent" : "hover:bg-accent/60"}`}
-                    >
-                      {METRIC_LABEL[m]}
-                    </button>
-                  ))}
-                </div>
-              }
-            >
-              <LiveMap status={status} metric={metric} />
+            <Panel title="Last pipeline run" subtitle={`Status published ${formatPkt(status.generated_at_utc)}`}>
+              <RunDetails status={status} />
             </Panel>
 
             <Panel
@@ -130,7 +129,7 @@ export default function LiveData() {
               bodyClassName="p-0"
               className="overflow-hidden"
             >
-              <div className="fl-scroll max-h-[70vh] overflow-auto">
+              <div className="fl-scroll max-h-[420px] overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border hover:bg-transparent">

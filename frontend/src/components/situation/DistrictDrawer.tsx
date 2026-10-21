@@ -5,6 +5,7 @@ import Panel from "@/components/common/Panel";
 import SourceLine from "@/components/common/SourceLine";
 import Tag from "@/components/common/Tag";
 import { NOW_INDEX, sources } from "@/data/mockData";
+import { realSituation } from "@/data/backend";
 import {
   FLOOD_LEVEL_COLOR,
   FLOOD_LEVEL_LABEL,
@@ -63,9 +64,11 @@ export default function DistrictDrawer({
   const risk = district ? riskAt(district, offset) : "low";
 
   return (
-    <Sheet open={open && !!district} onOpenChange={onOpenChange}>
+    <Sheet open={open && !!district} onOpenChange={onOpenChange} modal={false}>
       <SheetContent
         side="right"
+        overlay={false}
+        onInteractOutside={(e) => e.preventDefault()}
         className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[480px]"
       >
         {district && (
@@ -77,7 +80,8 @@ export default function DistrictDrawer({
                     {district.name}
                   </SheetTitle>
                   <SheetDescription className="mt-0.5 text-xs text-muted-foreground">
-                    {district.province} · population {district.population.toLocaleString("en-US")}
+                    {district.province}
+                    {district.population > 0 && ` · population ${district.population.toLocaleString("en-US")}`}
                   </SheetDescription>
                 </div>
                 <Tag label={`${RISK_LABEL[risk]} risk`} color={RISK_COLOR[risk]} />
@@ -90,7 +94,11 @@ export default function DistrictDrawer({
                 subtitle={`Peak risk ${RISK_LABEL[peak.risk].toLowerCase()} on ${fmtDayLong(peak.date)}`}
               >
                 <RiskTrendChart forecast={forecast} />
-                <SourceLine name="FFD / PMD risk ensemble" updated="09:00 PKT · 2 h ago" className="mt-1" />
+                <SourceLine
+                  name={realSituation ? "Model A (next 3 days) · NASA IMERG vs threshold (past days)" : "FFD / PMD risk ensemble"}
+                  updated={realSituation ? "hourly pipeline" : "09:00 PKT · 2 h ago"}
+                  className="mt-1"
+                />
               </Panel>
 
               <Panel title="What's driving the risk">
@@ -103,6 +111,7 @@ export default function DistrictDrawer({
                 />
               </Panel>
 
+              {gauges.length > 0 && (
               <Panel title="Nearest gauges" subtitle="Hydrograph with flood-level thresholds">
                 <div className="space-y-4">
                   {gauges.map((gauge) => {
@@ -132,10 +141,15 @@ export default function DistrictDrawer({
                 </div>
               </Panel>
 
-              <Panel title="Exposure">
-                <ExposureStats district={district} />
-              </Panel>
+              )}
 
+              {district.population > 0 && (
+                <Panel title="Exposure">
+                  <ExposureStats district={district} />
+                </Panel>
+              )}
+
+              {markets.length > 0 && !realSituation && (
               <Panel
                 title="Food prices in nearby markets"
                 subtitle={market ? `${market.name} · current against 4-week forecast` : undefined}
@@ -160,11 +174,12 @@ export default function DistrictDrawer({
                 {market && <MarketPriceRows series={market.prices} />}
                 <SourceLine name="PBS weekly retail · WFP VAM" updated="17 Oct 2026 · 3 d ago" className="mt-2" />
               </Panel>
+              )}
 
               <Panel title="Sources used">
                 <ul className="space-y-2">
                   {sources
-                    .filter((s) => SOURCE_IDS.includes(s.id))
+                    .filter((s) => (realSituation ? s.id.startsWith("pipeline-") : SOURCE_IDS.includes(s.id)))
                     .map((source) => (
                       <li key={source.id} className="flex items-start justify-between gap-3">
                         <div className="min-w-0">

@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MessageSquareText } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import TopBar from "@/components/layout/TopBar";
 import Panel from "@/components/common/Panel";
 import EmptyState from "@/components/common/EmptyState";
+import { backendStatus } from "@/data/backend";
+
+// Through the tunnel published in status.json (works on the public Space); else the local dev proxy.
+// Read at ask time: status.json is loaded after this module is imported.
+const askUrl = () => (backendStatus?.insight_url ? `${backendStatus.insight_url}/api/ask` : "/insight/ask");
 
 type Answer = { text: string; citations: string[]; row_ids: string[]; known: boolean; emergency: boolean };
 
@@ -20,12 +25,22 @@ export default function Ask() {
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
 
-  async function ask(question: string) {
+  // ?q=...&lang=ur asks straight away (shareable links, demo recording)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search || window.location.hash.split("?")[1] || "");
+    const q0 = params.get("q");
+    const l0 = params.get("lang");
+    if (l0 === "ur" || l0 === "en") setLang(l0);
+    if (q0) ask(q0, l0 === "ur" ? "ur" : "en");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function ask(question: string, language: "en" | "ur" = lang) {
     if (question.trim().length < 2) return;
     setQ(question);
     setState("loading");
     try {
-      const res = await fetch(`/insight/ask?${new URLSearchParams({ q: question, lang })}`);
+      const res = await fetch(`${askUrl()}?${new URLSearchParams({ q: question, lang: language })}`);
       if (!res.ok) throw new Error(String(res.status));
       setAnswer((await res.json()) as Answer);
       setState("idle");
@@ -97,12 +112,8 @@ export default function Ask() {
         {state === "error" ? (
           <EmptyState
             icon={MessageSquareText}
-            title={import.meta.env.VITE_STATIC_SPACE === "1"
-              ? "The Insight Agent runs with the backend, not on this static Space"
-              : "The Insight Agent is not running"}
-            description={import.meta.env.VITE_STATIC_SPACE === "1"
-              ? "It needs the document index and a Python process; see the demo video or run it locally (README)."
-              : "Start it in backend/: .venv-insight/bin/uvicorn src.insight_api:app --port 8001"}
+            title="The Insight Agent could not be reached"
+            description="It runs on the FloodLens backend machine and is published through a tunnel; the backend may be restarting. Try again in a minute."
           />
         ) : state === "loading" ? (
           <p className="text-sm text-muted-foreground">Searching documents…</p>

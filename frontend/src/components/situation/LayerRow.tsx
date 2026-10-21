@@ -10,6 +10,7 @@ type LayerRowProps = {
   active: boolean;
   offset: number;
   onToggle: () => void;
+  unavailable?: boolean;
 };
 
 export default function LayerRow({
@@ -19,6 +20,7 @@ export default function LayerRow({
   active,
   offset,
   onToggle,
+  unavailable = false,
 }: LayerRowProps) {
   const text = layerKey === "rainfall" ? rainfallLabel(offset) : label;
 
@@ -26,8 +28,9 @@ export default function LayerRow({
     <div className="flex items-center gap-2">
       <button
         type="button"
-        onClick={onToggle}
-        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        onClick={unavailable ? undefined : onToggle}
+        disabled={unavailable}
+        className={cn("flex min-w-0 flex-1 items-center gap-2 text-left", unavailable && "cursor-not-allowed opacity-50")}
       >
         <Icon className={cn("h-4 w-4 shrink-0", active ? "text-foreground" : "text-muted-foreground")} />
         <span className={cn("truncate text-sm", active ? "text-foreground" : "text-muted-foreground")}>
@@ -35,8 +38,9 @@ export default function LayerRow({
         </span>
       </button>
       <Switch
-        checked={active}
+        checked={active && !unavailable}
         onCheckedChange={onToggle}
+        disabled={unavailable}
         aria-label={text}
         className="scale-[0.78]"
       />

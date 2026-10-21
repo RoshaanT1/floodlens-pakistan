@@ -1,0 +1,14 @@
+# Public HTTPS tunnel to the Insight API for the dashboard's Ask page (Cloudflare quick tunnel).
+[Unit]
+Description=FloodLens Insight API tunnel (Cloudflare)
+After=floodlens-insight.service network-online.target
+Wants=floodlens-insight.service
+
+[Service]
+WorkingDirectory=/home/roshaan/Desktop/Project/Competition/hackInsight/backend
+ExecStart=/bin/sh /home/roshaan/Desktop/Project/Competition/hackInsight/backend/deploy/tunnel.sh
+Restart=always
+RestartSec=20
+
+[Install]
+WantedBy=default.target

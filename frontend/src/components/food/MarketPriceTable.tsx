@@ -1,4 +1,5 @@
 import { Droplets } from "lucide-react";
+import { realSituation } from "@/data/backend";
 import Tag from "@/components/common/Tag";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DATA_HUE, RISK_COLOR, cropToColor, fmtPct, fmtPkr } from "@/lib/risk";
@@ -46,7 +47,7 @@ export default function MarketPriceTable({
             2 wk / 4 wk
           </TableHead>
           <TableHead className="h-6 px-3 text-xs font-medium text-muted-foreground">
-            Confidence
+            {realSituation ? "Typical move" : "Confidence"}
           </TableHead>
           <TableHead className="h-6 px-3 text-xs font-medium text-muted-foreground" />
         </TableRow>
@@ -89,7 +90,9 @@ export default function MarketPriceTable({
               </TableCell>
               <TableCell className="px-3 py-2">
                 <Tag
-                  label={confidenceOf(series)}
+                  label={realSituation
+                    ? { High: "small", Medium: "moderate", Low: "large" }[confidenceOf(series)]
+                    : confidenceOf(series)}
                   color={CONFIDENCE_COLOR[confidenceOf(series)]}
                 />
               </TableCell>

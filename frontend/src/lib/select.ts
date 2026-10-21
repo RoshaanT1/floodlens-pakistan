@@ -20,6 +20,7 @@ import type {
   RiskLevel,
 } from "@/data/types";
 import { RISK_RANK } from "./risk";
+import { realSituation } from "@/data/backend";
 
 export { dateAtOffset, timeAtOffset, LIVE_LABEL } from "@/data/mockData";
 
@@ -50,6 +51,7 @@ export const isAboveHighFlood = (gauge: Gauge, offset: number) =>
 
 /** Alerts still in force at the selected time (issued at or before it, within 96 hours). */
 export function activeAlerts(offset: number): Alert[] {
+  if (realSituation) return [...alerts]; // official NDMA documents, newest first
   const t = timeAtOffset(offset);
   const order = { emergency: 0, warning: 1, watch: 2 } as const;
   return alerts
@@ -75,12 +77,14 @@ export function alertsByDistrict(offset: number): Record<string, Alert["severity
 }
 
 export function seriesChangePct(series: PriceSeries): number {
+  if (series.observedChange4w !== undefined) return series.observedChange4w ?? 0; // real: last 4 weeks, observed
   const last = series.forecast[series.forecast.length - 1];
   return ((last.price - series.current) / series.current) * 100;
 }
 
 /** Forecast change over the next 2 weeks (day 14 of the forecast). */
 export function seriesChangePctAt(series: PriceSeries, day: number): number {
+  if (series.observedChange4w !== undefined) return (day <= 14 ? series.observedChange2w : series.observedChange4w) ?? 0;
   const point = series.forecast[Math.min(day, series.forecast.length) - 1];
   return ((point.price - series.current) / series.current) * 100;
 }
@@ -169,10 +173,12 @@ export function districtById(id: string | null): District | null {
 
 /** Rainfall layer label flips between observed and forecast with the time slider. */
 export function rainfallLabel(offset: number) {
+  if (realSituation) return offset < 0 ? "Rainfall (observed that day)" : "Rainfall (forecast for that day)";
   return offset <= 0 ? "Rainfall (last 24 hours)" : "Rainfall (next 72 hours)";
 }
 
 export function rainfallValue(district: District, offset: number) {
+  if (district.rainByDay) return district.rainByDay[indexForOffset(offset)] ?? 0;
   const m = metricsFor(district);
   return offset <= 0 ? m.rain24hMm : m.rain72hMm;
 }

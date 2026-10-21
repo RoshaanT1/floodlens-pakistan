@@ -20,14 +20,14 @@ export type LayerGroup = {
   key: GroupKey;
   label: string;
   source: { name: string; updated: string };
-  layers: { key: LayerKey; label: string; icon: LucideIcon }[];
+  layers: { key: LayerKey; label: string; icon: LucideIcon; unavailable?: boolean }[];
 };
 
 export const DEFAULT_LAYERS: LayerState = {
   districtRisk: true,
-  gauges: true,
+  gauges: false,
   rainfall: false,
-  satellite: false,
+  satellite: true,
   population: false,
   cropland: false,
   markets: true,
@@ -43,27 +43,27 @@ export const LAYER_GROUPS: LayerGroup[] = [
   {
     key: "hazard",
     label: "Hazard",
-    source: { name: "FFD / PMD", updated: "09:00 PKT · 2 h ago" },
+    source: { name: "Model A · Open-Meteo · NASA IMERG", updated: "hourly pipeline" },
     layers: [
-      { key: "districtRisk", label: "Flood risk forecast by district", icon: Map },
-      { key: "gauges", label: "River gauges and barrages", icon: Waves },
+      { key: "districtRisk", label: "Heavy-rain risk by district", icon: Map },
+      { key: "gauges", label: "River gauges (not available yet)", icon: Waves, unavailable: true },
       { key: "rainfall", label: "Rainfall", icon: CloudRain },
-      { key: "satellite", label: "Satellite flood extent", icon: Globe },
+      { key: "satellite", label: "Satellite rainfall, last 7 days", icon: Globe },
     ],
   },
   {
     key: "exposure",
     label: "Exposure",
-    source: { name: "Census 2023 · PBS", updated: "2023 census · static" },
+    source: { name: "not connected yet", updated: "—" },
     layers: [
-      { key: "population", label: "Population exposed", icon: Users },
-      { key: "cropland", label: "Cropland affected", icon: Sprout },
+      { key: "population", label: "Population exposed (not available yet)", icon: Users, unavailable: true },
+      { key: "cropland", label: "Cropland affected (not available yet)", icon: Sprout, unavailable: true },
     ],
   },
   {
     key: "impact",
     label: "Impact",
-    source: { name: "WFP VAM · PBS", updated: "18 Oct 2026 · 2 d ago" },
-    layers: [{ key: "markets", label: "Food-price forecast by market", icon: Store }],
+    source: { name: "PBS weekly SPI, 17 cities", updated: "weekly (Thursday)" },
+    layers: [{ key: "markets", label: "Sudden food-price changes", icon: Store }],
   },
 ];

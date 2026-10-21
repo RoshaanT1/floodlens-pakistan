@@ -45,7 +45,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Add your page Route elements here */}
-      <Route path="/" element={STATIC_SPACE ? <LiveData /> : <SituationRoom />} />
+      <Route path="/" element={<SituationRoom />} />
       <Route path="/situation" element={<SituationRoom />} />
       <Route path="/food-prices" element={<FoodPrices />} />
       <Route path="/sources" element={<SourcesMethods />} />

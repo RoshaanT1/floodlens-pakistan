@@ -1,16 +1,14 @@
 import { Link, NavLink } from "react-router-dom";
 import { Moon, Sun, Waves } from "lucide-react";
 import { LIVE_LABEL } from "@/data/mockData";
+import { realSituation } from "@/data/backend";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
-const STATIC_SPACE = import.meta.env.VITE_STATIC_SPACE === "1";
-
 const NAV = [
-  ...(STATIC_SPACE
-    ? [{ to: "/", label: "Live data", end: true }, { to: "/situation", label: "Situation Room (sample)", end: false }]
-    : [{ to: "/", label: "Situation Room", end: true }, { to: "/live", label: "Live data", end: false }]),
-  { to: "/food-prices", label: "Food Prices (sample)", end: false },
+  { to: "/", label: "Situation Room", end: true },
+  { to: "/live", label: "Live data", end: false },
+  { to: "/food-prices", label: "Food Prices", end: false },
   { to: "/ask", label: "Ask", end: false },
   { to: "/sources", label: "Sources & Methods", end: false },
 ];
@@ -37,8 +35,8 @@ export default function TopBar() {
         </Link>
 
         <span className="hidden items-center gap-1.5 rounded border border-border bg-background/60 px-2 py-[3px] text-xs text-muted-foreground sm:inline-flex">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-          {LIVE_LABEL}
+          <span className={cn("h-1.5 w-1.5 rounded-full", realSituation ? "fl-pulse bg-emerald-400" : "bg-amber-400")} />
+          {realSituation ? LIVE_LABEL : "Sample scenario"}
         </span>
 
         <nav className="ml-auto hidden items-center gap-0.5 md:flex">

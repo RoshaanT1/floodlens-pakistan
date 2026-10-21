@@ -8,6 +8,10 @@ export type District = {
   polygon: [number, number][];
   risk: RiskLevel;
   riskForecast: { date: string; risk: RiskLevel }[];
+  /** true where the pipeline has no value for that slider day (drawn grey, never guessed) */
+  noData?: boolean[];
+  /** rain per slider day (mm): observed wettest point for past days, forecast for today on; null = no data */
+  rainByDay?: (number | null)[];
   population: number;
   exposedPopulation: number;
   croplandHa: number;
@@ -37,6 +41,8 @@ export type Alert = {
   reason: string;
   districtId: string;
   issuedAt: string;
+  /** official document behind the alert (real NDMA alerts) */
+  url?: string;
 };
 
 export type PriceSeries = {
@@ -47,6 +53,9 @@ export type PriceSeries = {
   forecast: { date: string; price: number; low: number; high: number }[];
   floodLinked: boolean;
   reason: string;
+  /** real PBS data: observed % change over the last 2 and 4 weeks (the forecast is the no-change baseline) */
+  observedChange2w?: number | null;
+  observedChange4w?: number | null;
 };
 
 export type Market = {

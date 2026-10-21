@@ -18,7 +18,7 @@ export const DAY_MS = 86_400_000;
 export const DAY_OFFSETS = Array.from({ length: 15 }, (_, i) => i - 7);
 export const NOW_INDEX = 7;
 // Situation Room and Food Prices run on this sample scenario; real pipeline output is on /live.
-export const LIVE_LABEL = "Map and prices: sample scenario";
+export const LIVE_LABEL = "Live pipeline · updated hourly";
 
 export const dateAtOffset = (offset: number) =>
   new Date(MOCK_NOW.getTime() + offset * DAY_MS).toISOString().slice(0, 10);
@@ -553,7 +553,7 @@ export const alerts: Alert[] = [
 /* ------------------------------------------------------------------ *
  * Satellite flood extent (simplified observed footprints)
  * ------------------------------------------------------------------ */
-export const satelliteFloodExtent: { id: string; label: string; polygon: [number, number][] }[] = [
+export const satelliteFloodExtent: { id: string; label: string; polygon: [number, number][]; value?: number }[] = [
   {
     id: "sfe-dadu",
     label: "Sukkur–Dadu riverine inundation",
@@ -1085,7 +1085,7 @@ export const MARKET_DISTRICT: Record<string, string> = Object.fromEntries(
   MARKET_SPECS.map((m) => [m.id, m.districtId]),
 );
 
-export const COMMODITIES = [
+export const COMMODITIES: string[] = [
   "Wheat flour",
   "Rice (IRRI-6)",
   "Tomatoes",

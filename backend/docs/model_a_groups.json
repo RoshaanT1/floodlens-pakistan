@@ -1,0 +1,238 @@
+{
+  "model": "gbm",
+  "period": "validation 2025-07-01 to 2025-12-31, 24 h",
+  "groups": [
+    {
+      "grouping": "province",
+      "group": "Azad Kashmir",
+      "n": 1840,
+      "events": 58,
+      "brier": 0.029915676081154963,
+      "lo": 0.017886784645471544,
+      "hi": 0.044340658758895916,
+      "climatology": 0.03036726086379351,
+      "bss": 0.01487077760039146
+    },
+    {
+      "grouping": "province",
+      "group": "Balochistan",
+      "n": 6440,
+      "events": 127,
+      "brier": 0.018177672074922557,
+      "lo": 0.01274106264787569,
+      "hi": 0.02467857933046886,
+      "climatology": 0.01902821168638529,
+      "bss": 0.044698872678155754
+    },
+    {
+      "grouping": "province",
+      "group": "Gilgit Baltistan",
+      "n": 2576,
+      "events": 83,
+      "brier": 0.02760471422004471,
+      "lo": 0.017929055252200087,
+      "hi": 0.04092279572333346,
+      "climatology": 0.030125254264260035,
+      "bss": 0.08366867287177193
+    },
+    {
+      "grouping": "province",
+      "group": "Islamabad",
+      "n": 184,
+      "events": 9,
+      "brier": 0.04438754003300156,
+      "lo": 0.0217229178816032,
+      "hi": 0.07149044606896084,
+      "climatology": 0.045844227428300986,
+      "bss": 0.03177471793101194
+    },
+    {
+      "grouping": "province",
+      "group": "Khyber Pakhtunkhwa",
+      "n": 6440,
+      "events": 230,
+      "brier": 0.031045830087279944,
+      "lo": 0.021336011265302872,
+      "hi": 0.04275539363054884,
+      "climatology": 0.03361130075287782,
+      "bss": 0.07632762220242906
+    },
+    {
+      "grouping": "province",
+      "group": "Punjab",
+      "n": 6624,
+      "events": 221,
+      "brier": 0.029579579064816765,
+      "lo": 0.02074996327797914,
+      "hi": 0.04094837265698017,
+      "climatology": 0.03142750200246132,
+      "bss": 0.05879954879964144
+    },
+    {
+      "grouping": "province",
+      "group": "Sindh",
+      "n": 5336,
+      "events": 44,
+      "brier": 0.007341241861949844,
+      "lo": 0.0037327063047462817,
+      "hi": 0.010961849685977057,
+      "climatology": 0.008340667380367962,
+      "bss": 0.11982560541504617
+    },
+    {
+      "grouping": "terrain",
+      "group": "mountain",
+      "n": 10304,
+      "events": 338,
+      "brier": 0.028722424530656494,
+      "lo": 0.021049595537286435,
+      "hi": 0.03827987009593024,
+      "climatology": 0.03089668527835701,
+      "bss": 0.07037197447273014
+    },
+    {
+      "grouping": "terrain",
+      "group": "plain",
+      "n": 19136,
+      "events": 434,
+      "brier": 0.020405172713610097,
+      "lo": 0.015464746024573834,
+      "hi": 0.025817827624173256,
+      "climatology": 0.02169911905453241,
+      "bss": 0.05963128446230814
+    },
+    {
+      "grouping": "coast",
+      "group": "coastal",
+      "n": 2208,
+      "events": 29,
+      "brier": 0.011703767504818451,
+      "lo": 0.006012854165808425,
+      "hi": 0.019347608983277836,
+      "climatology": 0.012578681578830922,
+      "bss": 0.06955530820375422
+    },
+    {
+      "grouping": "coast",
+      "group": "inland",
+      "n": 27232,
+      "events": 743,
+      "brier": 0.02425776030996211,
+      "lo": 0.018496044490831195,
+      "hi": 0.03103586403710032,
+      "climatology": 0.025918774177793192,
+      "bss": 0.06408535590599851
+    },
+    {
+      "grouping": "2022 flooding",
+      "group": "flood-prone",
+      "n": 6072,
+      "events": 72,
+      "brier": 0.01073536388798403,
+      "lo": 0.007014776151580729,
+      "hi": 0.01482608901361433,
+      "climatology": 0.011753687814022341,
+      "bss": 0.0866386739337619
+    },
+    {
+      "grouping": "2022 flooding",
+      "group": "not flood-prone",
+      "n": 23368,
+      "events": 700,
+      "brier": 0.026585249823848352,
+      "lo": 0.020105701652061752,
+      "hi": 0.03419451302322846,
+      "climatology": 0.02833898471965847,
+      "bss": 0.061884182272541666
+    },
+    {
+      "grouping": "season",
+      "group": "dry (Oct-Dec)",
+      "n": 14720,
+      "events": 129,
+      "brier": 0.007867765047450345,
+      "lo": 0.003740382841681112,
+      "hi": 0.012527050647855295,
+      "climatology": 0.008676307940713036,
+      "bss": 0.09318974139549085
+    },
+    {
+      "grouping": "season",
+      "group": "monsoon (Jun-Sep)",
+      "n": 14720,
+      "events": 643,
+      "brier": 0.038764656651702326,
+      "lo": 0.029484768426946906,
+      "hi": 0.0477689594077992,
+      "climatology": 0.04116022652502901,
+      "bss": 0.058201085746453995
+    }
+  ],
+  "weakest": {
+    "grouping": "province",
+    "group": "Azad Kashmir",
+    "bss": 0.01487077760039146
+  },
+  "buner": [
+    {
+      "day": "2025-08-14",
+      "lead": 1,
+      "forecast_mm": 10.6,
+      "threshold_mm": 57.5,
+      "observed_mm": 25.5,
+      "label": 0,
+      "p_model": 0.1364,
+      "p_climatology": 0.0394
+    },
+    {
+      "day": "2025-08-14",
+      "lead": 2,
+      "forecast_mm": 14.8,
+      "threshold_mm": 57.5,
+      "observed_mm": 25.5,
+      "label": 0,
+      "p_model": 0.1964,
+      "p_climatology": 0.0394
+    },
+    {
+      "day": "2025-08-14",
+      "lead": 3,
+      "forecast_mm": 16.4,
+      "threshold_mm": 57.5,
+      "observed_mm": 25.5,
+      "label": 0,
+      "p_model": 0.1697,
+      "p_climatology": 0.0394
+    },
+    {
+      "day": "2025-08-15",
+      "lead": 1,
+      "forecast_mm": 24.9,
+      "threshold_mm": 57.5,
+      "observed_mm": 43.2,
+      "label": 0,
+      "p_model": 0.1529,
+      "p_climatology": 0.0394
+    },
+    {
+      "day": "2025-08-15",
+      "lead": 2,
+      "forecast_mm": 10.8,
+      "threshold_mm": 57.5,
+      "observed_mm": 43.2,
+      "label": 0,
+      "p_model": 0.1289,
+      "p_climatology": 0.0394
+    },
+    {
+      "day": "2025-08-15",
+      "lead": 3,
+      "forecast_mm": 2.1,
+      "threshold_mm": 57.5,
+      "observed_mm": 43.2,
+      "label": 0,
+      "p_model": 0.1287,
+      "p_climatology": 0.0394
+    }
+  ]
+}

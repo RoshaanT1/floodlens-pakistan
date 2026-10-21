@@ -1,4 +1,5 @@
 import { CircleMarker, MapContainer, Tooltip } from "react-leaflet";
+import { realSituation } from "@/data/backend";
 import "leaflet/dist/leaflet.css";
 import BaseTiles from "@/components/map/BaseTiles";
 import { RISK_COLOR, alpha, cropToColor, fmtPct } from "@/lib/risk";
@@ -45,7 +46,7 @@ export default function MarketsMap({ markets, selectedMarketId, onSelect }: Mark
               <Tooltip className="fl-tip" direction="top">
                 <span className="font-medium">{market.name}</span>
                 <br />
-                4-week forecast {fmtPct(change)} · wheat flour
+                {realSituation ? "last 4 weeks" : "4-week forecast"} {fmtPct(change)} · wheat flour
               </Tooltip>
             </CircleMarker>
           );

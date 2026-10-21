@@ -12,6 +12,7 @@ import MarketPriceTable from "@/components/food/MarketPriceTable";
 import MarketsMap from "@/components/food/MarketsMap";
 import PriceForecastChart from "@/components/food/PriceForecastChart";
 import { COMMODITIES, markets } from "@/data/mockData";
+import { backendStatus, realSituation } from "@/data/backend";
 import { DATA_HUE, RISK_COLOR, cropToColor, fmtPct, fmtPkr } from "@/lib/risk";
 import {
   confidenceBand,
@@ -69,7 +70,9 @@ export default function FoodPrices() {
       <div className="mx-auto w-full max-w-[1240px] space-y-3 p-3 sm:p-4">
         <PageHeader
           title="Food Prices"
-          subtitle={`${markets.length} markets tracked · ${spiking} with a four-week forecast spike of 15% or more · prices in PKR`}
+          subtitle={realSituation
+            ? `${markets.length} PBS cities · ${spiking} with an item up 15% or more over the last 4 weeks · weekly prices in PKR (PBS SPI)`
+            : `${markets.length} markets tracked · ${spiking} with a four-week forecast spike of 15% or more · prices in PKR`}
         />
 
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_384px]">
@@ -96,7 +99,7 @@ export default function FoodPrices() {
                   {option === "all" ? "All commodities" : option}
                 </button>
               ))}
-              <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+              <label className={cn("ml-auto flex items-center gap-2 text-xs text-muted-foreground", realSituation && "hidden")}>
                 Flood-linked only
                 <Switch
                   checked={floodLinkedOnly}
@@ -150,14 +153,17 @@ export default function FoodPrices() {
             )}
 
             <div className="border-t border-border px-3 py-2">
-              <SourceLine name="PBS weekly retail · WFP VAM market baselines" updated="17 Oct 2026 · 3 d ago" />
+              <SourceLine
+                name={realSituation ? "PBS weekly SPI, city annex" : "PBS weekly retail · WFP VAM market baselines"}
+                updated={realSituation ? `week ending ${backendStatus?.market?.week_end ?? "—"}` : "17 Oct 2026 · 3 d ago"}
+              />
             </div>
           </Panel>
 
           <div className="space-y-3 lg:sticky lg:top-[68px] lg:self-start">
             <Panel
-              title="Markets by forecast change"
-              subtitle="Colour shows the largest four-week change in each market"
+              title={realSituation ? "Markets by change, last 4 weeks" : "Markets by forecast change"}
+              subtitle={realSituation ? "Colour shows the largest observed rise over the last four weeks" : "Colour shows the largest four-week change in each market"}
               flush
               bodyClassName="p-0"
               className="overflow-hidden"
@@ -175,7 +181,9 @@ export default function FoodPrices() {
 
             <Panel
               title={`${market.name} — ${series.commodity}`}
-              subtitle="Observed history, four-week forecast and its 80% confidence band"
+              subtitle={realSituation
+                ? "Observed weekly prices (52 weeks), the no-change baseline and the item's typical 4-week range"
+                : "Observed history, four-week forecast and its 80% confidence band"}
             >
               {state === "loading" ? (
                 <SkeletonBlock rows={6} rowClassName="h-5" />
@@ -186,12 +194,12 @@ export default function FoodPrices() {
                       {fmtPkr(series.current)} now
                     </span>
                     <Tag
-                      label={`${fmtPct(change4)} by 4 weeks`}
+                      label={realSituation ? `${fmtPct(change4)} over the last 4 weeks` : `${fmtPct(change4)} by 4 weeks`}
                       color={RISK_COLOR[cropToColor(change4)]}
                       dot={false}
                     />
                     <Tag
-                      label={`Confidence ${confidenceOf(series)}`}
+                      label={realSituation ? `Typical move: ${confidenceOf(series) === "High" ? "small" : confidenceOf(series) === "Medium" ? "moderate" : "large"}` : `Confidence ${confidenceOf(series)}`}
                       color={CONFIDENCE_COLOR[confidenceOf(series)]}
                     />
                     {series.floodLinked && (
@@ -207,12 +215,12 @@ export default function FoodPrices() {
                       {series.reason}
                     </p>
                     <p className="text-xs text-muted-foreground tabular-nums">
-                      2-week change {fmtPct(change2)} · 80% band at 4 weeks{" "}
+                      {realSituation ? "Last 2 weeks" : "2-week change"} {fmtPct(change2)} · {realSituation ? "typical range in 4 weeks" : "80% band at 4 weeks"}{" "}
                       {fmtPkr(band.low)} – {fmtPkr(band.high)}
                     </p>
                     <SourceLine
-                      name="PBS weekly retail · WFP VAM"
-                      updated="17 Oct 2026 · 3 d ago"
+                      name={realSituation ? "PBS weekly SPI, city annex" : "PBS weekly retail · WFP VAM"}
+                      updated={realSituation ? `week ending ${backendStatus?.market?.week_end ?? "—"}` : "17 Oct 2026 · 3 d ago"}
                       className="pt-1"
                     />
                   </div>

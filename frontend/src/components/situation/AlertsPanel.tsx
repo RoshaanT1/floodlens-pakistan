@@ -75,7 +75,7 @@ export default function AlertsPanel({
               key={alert.id}
               alert={alert}
               now={now}
-              districtName={districtById(alert.districtId)?.name ?? "—"}
+              districtName={districtById(alert.districtId)?.name ?? (alert.url ? "Pakistan (national)" : "—")}
               onSelect={() => onSelectAlert(alert)}
             />
           ))

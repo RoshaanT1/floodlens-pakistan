@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Circle, CircleMarker, MapContainer, Polygon, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { Circle, CircleMarker, MapContainer, Marker, Polygon, TileLayer, Tooltip, useMap } from "react-leaflet";
+import L from "leaflet";
 import { Crosshair, Minus, Plus } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { districts, gauges, markets, satelliteFloodExtent } from "@/data/mockData";
@@ -15,7 +16,8 @@ import {
   fmtInt,
   fmtPkrShort,
 } from "@/lib/risk";
-import { flowAt, levelAt, marketSpikePct, rainfallValue, riskAt } from "@/lib/select";
+import { flowAt, indexForOffset, levelAt, marketSpikePct, rainfallValue, riskAt } from "@/lib/select";
+import { backendStatus, realSituation } from "@/data/backend";
 import BaseTiles from "@/components/map/BaseTiles";
 import MapLegend from "./MapLegend";
 import type * as Layers from "@/components/situation/layers";
@@ -36,6 +38,46 @@ type MapInstance = {
 };
 
 const HOME: [number, number] = [30.2, 69.4];
+
+// Real-data rendering (pipeline): rain in blue bands, sudden PBS price moves as red/green markers.
+const RAIN_BREAKS = [1, 5, 10, 25, 50];
+const RAIN_BLUES = ["#c6dbef", "#6baed6", "#3182bd", "#08519c", "#08306b"];
+const rainColor = (mm: number) => (mm < RAIN_BREAKS[0] ? null : RAIN_BLUES[Math.min(RAIN_BREAKS.filter((b) => mm >= b).length - 1, 4)]);
+const SUDDEN_PCT = 10;
+const PRICE_UP = "#d7301f";
+const PRICE_DOWN = "#1a9850";
+const PRICE_MIXED = "#7b3294";
+
+/** Price tag icon: arrow + biggest move, coloured by direction (rose / fell / both). */
+function priceTag(moves: { item: string; wow_pct: number | null }[]) {
+  const up = moves.filter((m) => (m.wow_pct ?? 0) > 0);
+  const down = moves.filter((m) => (m.wow_pct ?? 0) < 0);
+  const mixed = up.length > 0 && down.length > 0;
+  const top = moves[0];
+  const color = mixed ? PRICE_MIXED : up.length ? PRICE_UP : PRICE_DOWN;
+  // short tag (arrow + size); item names are in the hover tooltip so tags don't collide
+  const text = mixed ? `&#8645; ${moves.length}` : `${up.length ? "&#9650;" : "&#9660;"} ${Math.abs(top.wow_pct ?? 0).toFixed(0)}%`;
+  return L.divIcon({
+    className: "",
+    iconSize: undefined,
+    iconAnchor: [0, 10],
+    html: `<div style="display:inline-flex;align-items:center;white-space:nowrap;padding:2px 7px;border-radius:999px;background:${color};color:#fff;font:600 11px/16px system-ui,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.35);border:1.5px solid #fff;transform:translate(-50%,0)">${text}</div>`,
+  });
+}
+
+function suddenMoves() {
+  const m = backendStatus?.market;
+  if (!m?.city_xy) return [];
+  return Object.entries(m.cities).flatMap(([city, rows]) => {
+    const xy = m.city_xy?.[city];
+    if (!xy) return [];
+    const moves = rows
+      .filter((r) => r.wow_pct != null && Math.abs(r.wow_pct) >= SUDDEN_PCT)
+      .sort((a, b) => Math.abs(b.wow_pct ?? 0) - Math.abs(a.wow_pct ?? 0));
+    const top = moves[0]?.wow_pct ?? 0;
+    return [{ city, xy, moves, top, week: m.week_end }];
+  });
+}
 
 const maxFlow = Math.max(...gauges.map((g) => g.thresholds.exceptionallyHigh));
 const maxExposed = Math.max(...districts.map((d) => d.exposedPopulation));
@@ -117,29 +159,54 @@ export default function MapView({
         {layers.districtRisk &&
           districts.map((d) => {
             const risk = riskAt(d, offset);
+            const missing = d.noData?.[indexForOffset(offset)] ?? false;
+            const fill = missing ? "#9ca3af" : RISK_COLOR[risk];
             const selected = d.id === selectedDistrictId;
             return (
               <Polygon
                 key={d.id}
                 positions={d.polygon}
                 pathOptions={{
-                  color: alpha(RISK_COLOR[risk], selected ? 0.95 : 0.6),
+                  color: alpha(fill, selected ? 0.95 : 0.6),
                   weight: selected ? 2 : 1,
-                  fillColor: RISK_COLOR[risk],
-                  fillOpacity: 0.42 * opacity.hazard,
+                  fillColor: fill,
+                  fillOpacity: (missing ? 0.18 : 0.42) * opacity.hazard,
                 }}
                 eventHandlers={{ click: () => onSelectDistrict(d.id) }}
               >
                 <Tooltip className="fl-tip" sticky>
                   <span className="font-medium">{d.name}</span> · {d.province}
                   <br />
-                  Risk {RISK_LABEL[risk].toLowerCase()} — {fmtInt(d.exposedPopulation)} people exposed
+                  {missing
+                    ? "No data for this day"
+                    : `Heavy-rain risk ${RISK_LABEL[risk].toLowerCase()}`}
+                  {d.exposedPopulation > 0 && ` — ${fmtInt(d.exposedPopulation)} people exposed`}
                 </Tooltip>
               </Polygon>
             );
           })}
 
-        {layers.rainfall &&
+        {layers.rainfall && realSituation &&
+          districts.map((d) => {
+            const mm = rainfallValue(d, offset);
+            const color = rainColor(mm);
+            if (!color) return null;
+            return (
+              <Polygon
+                key={`rain-${d.id}`}
+                positions={d.polygon}
+                pathOptions={{ color, weight: 0.6, fillColor: color, fillOpacity: 0.75 * opacity.hazard }}
+              >
+                <Tooltip className="fl-tip" sticky>
+                  <span className="font-medium">{d.name}</span>
+                  <br />
+                  {mm.toFixed(1)} mm {offset < 0 ? "observed (wettest point, NASA IMERG)" : "forecast (Open-Meteo)"}
+                </Tooltip>
+              </Polygon>
+            );
+          })}
+
+        {layers.rainfall && !realSituation &&
           districts.map((d) => {
             const mm = rainfallValue(d, offset);
             return (
@@ -173,7 +240,7 @@ export default function MapView({
                 weight: 1,
                 dashArray: "4 3",
                 fillColor: DATA_HUE.floodExtent,
-                fillOpacity: 0.3 * opacity.hazard,
+                fillOpacity: (f.value != null ? Math.min(0.12 + f.value / 160, 0.75) : 0.3) * opacity.hazard,
               }}
             >
               <Tooltip className="fl-tip" direction="top">
@@ -182,7 +249,40 @@ export default function MapView({
             </Polygon>
           ))}
 
-        {layers.markets &&
+        {layers.markets && realSituation &&
+          suddenMoves().map((c) => {
+            const tooltip = (
+              <Tooltip className="fl-tip" direction="top" offset={[0, -6]}>
+                <span className="font-medium">{c.city}</span> · PBS week ending {c.week}
+                <br />
+                {c.moves.length === 0
+                  ? `No item moved ${SUDDEN_PCT}% or more since last week`
+                  : c.moves.slice(0, 6).map((r) => (
+                      <span key={r.item_no}>
+                        {(r.wow_pct ?? 0) > 0 ? "▲" : "▼"} {r.item}: {(r.wow_pct ?? 0) > 0 ? "+" : ""}
+                        {(r.wow_pct ?? 0).toFixed(1)}%
+                        <br />
+                      </span>
+                    ))}
+              </Tooltip>
+            );
+            return c.moves.length === 0 ? (
+              <CircleMarker
+                key={`spi-${c.city}`}
+                center={c.xy}
+                radius={4}
+                pathOptions={{ color: "#ffffff", weight: 1, fillColor: "#9ca3af", fillOpacity: 0.9 * opacity.impact }}
+              >
+                {tooltip}
+              </CircleMarker>
+            ) : (
+              <Marker key={`spi-${c.city}`} position={c.xy} icon={priceTag(c.moves)} opacity={opacity.impact}>
+                {tooltip}
+              </Marker>
+            );
+          })}
+
+        {layers.markets && !realSituation &&
           markets.map((m) => {
             const change = marketSpikePct(m);
             const color = RISK_COLOR[cropToColor(change)];

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import LayerGroupLegend from "./LayerGroupLegend";
 import LayerRow from "./LayerRow";
 import { LAYER_GROUPS } from "./layers";
+import { backendStatus, realSituation } from "@/data/backend";
 import type * as Layers from "@/components/situation/layers";
 
 type LayersPanelProps = {
@@ -60,7 +61,9 @@ export default function LayersPanel({
       </header>
 
       <div className="fl-scroll min-h-0 flex-1 overflow-y-auto">
-        {LAYER_GROUPS.map((group) => (
+        {LAYER_GROUPS.map((g) => ({ ...g, layers: realSituation ? g.layers.filter((l) => !l.unavailable) : g.layers }))
+          .filter((group) => group.layers.length > 0)
+          .map((group) => (
           <section key={group.key} className="border-b border-border px-3 py-3 last:border-b-0">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {group.label}
@@ -75,12 +78,22 @@ export default function LayersPanel({
                   icon={layer.icon}
                   active={layers[layer.key]}
                   offset={offset}
+                  unavailable={layer.unavailable}
                   onToggle={() => onToggleLayer(layer.key)}
                 />
               ))}
             </div>
 
-            {group.key === "hazard" && layers.satellite && (
+            {group.key === "hazard" && layers.satellite && realSituation && (
+              <div className="mt-3">
+                <SourceLine
+                  name="NASA GPM IMERG Late · 7-day total"
+                  updated={`to ${backendStatus?.district_info?._meta?.obs_until ?? "—"}`}
+                />
+              </div>
+            )}
+
+            {group.key === "hazard" && layers.satellite && !realSituation && (
               <div className="mt-3">
                 {feed === "error" && (
                   <ErrorState

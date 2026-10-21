@@ -4,13 +4,17 @@
 
 GET /api/ask?q=...&lang=en|ur -> {text, citations, row_ids, known, emergency}
 Answers follow src.insight's rules (quotes with section ids, numbers with row ids,
-"I don't know" below the retrieval threshold). Local only; not exposed publicly.
+"I don't know" below the retrieval threshold). Exposed read-only through deploy/tunnel.sh
+(Cloudflare quick tunnel) so the public dashboard's Ask page can reach it.
 """
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 
 from src import doc_index, insight
 
 app = FastAPI(title="FloodLens Insight Agent")
+# read-only GET endpoint, called from the Hugging Face Space through a Cloudflare tunnel
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
 
 
 @app.on_event("startup")

@@ -73,9 +73,17 @@ export default function SituationRoom() {
     setDrawerOpen(true);
   }, []);
 
+  // clicking a district on the map selects it without moving the map
+  const selectDistrictInPlace = useCallback((id: string) => {
+    if (!districtById(id)) return;
+    setSelectedDistrictId(id);
+    setDrawerOpen(true);
+  }, []);
+
   const selectAlert = useCallback(
     (alert: Alert) => {
-      selectDistrict(alert.districtId);
+      if (alert.url) window.open(alert.url, "_blank", "noopener"); // official NDMA document
+      else selectDistrict(alert.districtId);
     },
     [selectDistrict],
   );
@@ -136,7 +144,7 @@ export default function SituationRoom() {
             opacity={opacity}
             selectedDistrictId={selectedDistrictId}
             focus={focus}
-            onSelectDistrict={selectDistrict}
+            onSelectDistrict={selectDistrictInPlace}
           />
           {state === "loading" && (
             <div className="absolute inset-0 z-[750] flex flex-col items-center justify-center gap-2 bg-background/75">

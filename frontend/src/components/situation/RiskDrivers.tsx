@@ -57,9 +57,10 @@ export default function RiskDrivers({
         icon={CloudRain}
         label="Rainfall forecast, next 72 hours"
         value={`${metrics.rain72hMm} mm`}
-        sub="PMD ensemble, issued 05:00 PKT"
+        sub="Open-Meteo latest model run (ECMWF / NOAA / DWD)"
       />
 
+      {gauge && (
       <Row
         icon={Waves}
         label={gauge ? `Nearest river — ${gauge.river} at ${gauge.name}` : "Nearest river"}
@@ -79,12 +80,13 @@ export default function RiskDrivers({
             : undefined
         }
       />
+      )}
 
       <Row
         icon={Droplets}
-        label="Rain in the last 24 hours"
+        label={metrics.soilSaturationPct < 0 ? "Forecast rain, next 24 hours" : "Rain in the last 24 hours"}
         value={`${metrics.rain24hMm} mm`}
-        sub={`Antecedent soil saturation ${metrics.soilSaturationPct}%`}
+        sub={metrics.soilSaturationPct < 0 ? undefined : `Antecedent soil saturation ${metrics.soilSaturationPct}%`}
       />
 
       <ul className="space-y-1 border-t border-border pt-3">

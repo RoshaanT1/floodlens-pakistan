@@ -8,6 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { realSituation } from "@/data/backend";
 import { RISK_COLOR, alpha, cropToColor, fmtDay, fmtDayLong, fmtPkr } from "@/lib/risk";
 import { seriesChangePct } from "@/lib/select";
 import type { PriceSeries } from "@/data/types";
@@ -137,7 +138,7 @@ export default function PriceForecastChart({ series, height = 240 }: PriceForeca
           <Line
             type="monotone"
             dataKey="forecast"
-            name="Forecast"
+            name={realSituation ? "No-change baseline" : "Forecast"}
             stroke={color}
             strokeWidth={2}
             strokeDasharray="5 3"

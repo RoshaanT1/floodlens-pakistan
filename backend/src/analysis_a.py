@@ -101,11 +101,15 @@ def report(db_path=DB_PATH) -> str:
              "## A5: groups\n", "| Grouping | Group | Rows | Events | Model Brier [95% CI] | Climatology Brier | BSS |",
              "| --- | --- | --- | --- | --- | --- | --- |"]
     worst = None
+    group_rows = []  # machine-readable copy for the dashboard (docs/model_a_groups.json)
     for gname, g in groupings.items():
         for key, part in v24.groupby(g):
             s = _skill(part, model_col)
             lines.append(f"| {gname} | {key} | {s['n']} | {s['positives']} | {s['brier']:.4f} "
                          f"[{s['lo']:.4f}, {s['hi']:.4f}] | {s['clim']:.4f} | {s['bss']:+.3f} |")
+            group_rows.append({"grouping": gname, "group": str(key), "n": s["n"], "events": s["positives"],
+                               "brier": s["brier"], "lo": s["lo"], "hi": s["hi"], "climatology": s["clim"],
+                               "bss": s["bss"]})
             if s["positives"] >= 5 and (worst is None or s["bss"] < worst[2]):
                 worst = (gname, key, s["bss"])
     if worst:
@@ -144,6 +148,15 @@ def report(db_path=DB_PATH) -> str:
                   "every sitrep (Islamabad, Lahore, Rawalpindi on 21 Oct) are mostly boilerplate "
                   "(NDMA's address, rainfall station tables), not impact reports."]
     OUT.write_text("\n".join(lines) + "\n")
+    buner = [{"day": str(pd.Timestamp(r.date_utc).date()), "lead": int(r.lead_days),
+              "forecast_mm": round(float(r.precip_sum_mm), 1), "threshold_mm": round(float(r.threshold_mm), 1),
+              "observed_mm": round(float(r.wettest_mm), 1), "label": int(r.label),
+              "p_model": round(float(getattr(r, model_col)), 4), "p_climatology": round(float(r.p_climatology), 4)}
+             for r in b.itertuples()]
+    (OUT.parent / "model_a_groups.json").write_text(json.dumps(
+        {"model": chosen, "period": "validation 2025-07-01 to 2025-12-31, 24 h", "groups": group_rows,
+         "weakest": {"grouping": worst[0], "group": str(worst[1]), "bss": worst[2]} if worst else None,
+         "buner": buner}, indent=2))
     print(f"-> {OUT}")
     return str(OUT)
 
