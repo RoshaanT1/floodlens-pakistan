@@ -97,8 +97,12 @@ export default function Ask() {
         {state === "error" ? (
           <EmptyState
             icon={MessageSquareText}
-            title="The Insight Agent is not running"
-            description="Start it in backend/: .venv-insight/bin/uvicorn src.insight_api:app --port 8001"
+            title={import.meta.env.VITE_STATIC_SPACE === "1"
+              ? "The Insight Agent runs with the backend, not on this static Space"
+              : "The Insight Agent is not running"}
+            description={import.meta.env.VITE_STATIC_SPACE === "1"
+              ? "It needs the document index and a Python process; see the demo video or run it locally (README)."
+              : "Start it in backend/: .venv-insight/bin/uvicorn src.insight_api:app --port 8001"}
           />
         ) : state === "loading" ? (
           <p className="text-sm text-muted-foreground">Searching documents…</p>

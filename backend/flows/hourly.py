@@ -10,7 +10,8 @@ Each run:
      and once a day the PBS weekly prices and the newest NDMA advisories and sitreps;
   2. rebuilds every table (`make data`) into a scratch copy of the database and swaps it
      in only if the build passes, so a failed run never touches the live database;
-  3. exports frontend/public/data/status.json (atomic write).
+  3. exports frontend/public/data/status.json (atomic write) and uploads it to the
+     Hugging Face Space (https://huggingface.co/spaces/RoshaanT1/floodlens-pakistan).
 
 Safe to repeat: fetchers skip queries already in the manifest, and the build is a pure
 function of the raw snapshot. One run at a time (limit=1); a run still going at the next
@@ -155,6 +156,27 @@ def export() -> None:
     _run([sys.executable, "-m", "src.export_frontend"], dict(os.environ))
 
 
+SPACE_REPO = "RoshaanT1/floodlens-pakistan"  # Hugging Face static Space (the public dashboard)
+
+
+@task(retries=2, retry_delay_seconds=60)
+def publish_space() -> str:
+    """Replace data/status.json on the Space; skipped without HF_TOKEN in .env."""
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
+    token = os.getenv("HF_TOKEN")
+    if not token:
+        return "skipped: no HF_TOKEN in backend/.env"
+    from huggingface_hub import HfApi
+    api = HfApi(token=token)
+    out = ROOT.parent / "frontend" / "public" / "data"
+    for name in ("status.json", "replay.json"):
+        if (out / name).exists():
+            api.upload_file(path_or_fileobj=str(out / name), path_in_repo=f"data/{name}", repo_id=SPACE_REPO,
+                            repo_type="space", commit_message=f"Hourly pipeline: {name}")
+    return "ok"
+
+
 @flow(name="floodlens-hourly")
 def hourly() -> dict:
     started = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -170,6 +192,10 @@ def hourly() -> dict:
               "run_started_utc": started, "fetch": fetched}
     STATUS.write_text(json.dumps(status, indent=2))  # read by export_frontend
     export()
+    try:  # a Hugging Face outage must not fail an otherwise good run
+        status["space"] = publish_space()
+    except Exception as e:
+        status["space"] = f"failed: {e.__class__.__name__}"
     return status
 
 

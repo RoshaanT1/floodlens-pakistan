@@ -1,7 +1,11 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom';
+
+// The Hugging Face Space is a static host: hash routes, and the pipeline's Live data page first.
+const STATIC_SPACE = import.meta.env.VITE_STATIC_SPACE === '1';
+const Router = STATIC_SPACE ? HashRouter : BrowserRouter;
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -41,7 +45,8 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Add your page Route elements here */}
-      <Route path="/" element={<SituationRoom />} />
+      <Route path="/" element={STATIC_SPACE ? <LiveData /> : <SituationRoom />} />
+      <Route path="/situation" element={<SituationRoom />} />
       <Route path="/food-prices" element={<FoodPrices />} />
       <Route path="/sources" element={<SourcesMethods />} />
       <Route path="/live" element={<LiveData />} />

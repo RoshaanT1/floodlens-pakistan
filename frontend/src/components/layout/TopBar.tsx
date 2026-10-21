@@ -4,10 +4,13 @@ import { LIVE_LABEL } from "@/data/mockData";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
+const STATIC_SPACE = import.meta.env.VITE_STATIC_SPACE === "1";
+
 const NAV = [
-  { to: "/", label: "Situation Room", end: true },
-  { to: "/food-prices", label: "Food Prices", end: false },
-  { to: "/live", label: "Live data", end: false },
+  ...(STATIC_SPACE
+    ? [{ to: "/", label: "Live data", end: true }, { to: "/situation", label: "Situation Room (sample)", end: false }]
+    : [{ to: "/", label: "Situation Room", end: true }, { to: "/live", label: "Live data", end: false }]),
+  { to: "/food-prices", label: "Food Prices (sample)", end: false },
   { to: "/ask", label: "Ask", end: false },
   { to: "/sources", label: "Sources & Methods", end: false },
 ];

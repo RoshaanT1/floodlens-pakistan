@@ -51,10 +51,15 @@ NDMA/PDMA advisories and call Rescue 1122 in an emergency.
  └──────────────────────────────────────────────────────────────────────────────┘
                      │
                      ▼
- frontend/ (React + Vite): Live data page reads status.json; sample-scenario pages
- are labelled as such
+ frontend/ (React + Vite) → Hugging Face Space https://huggingface.co/spaces/RoshaanT1/floodlens-pakistan
+ (the flow uploads status.json after every run): freshness per source, quality status, last
+ successful run, Model A map and table, market watch; sample-scenario pages are labelled
 ```
 
+- **Warehouse layers:** `data/raw/` (untouched downloads + `manifest.csv`), `data/clean/`
+  (cleaned, quality-checked tables as Parquet: districts, forecasts, district rain, prices,
+  documents, quality log) and `data/gold/` (processed: thresholds, labels, baseline, Model A
+  features, live risk scores), all rebuilt by `make data` and mirrored in `data/floodlens.duckdb`.
 - **Reproducible:** `make data` rebuilds every table from the frozen raw snapshot and
   refuses to run if any file's SHA-256 differs from the manifest.
 - **No leakage:** forecast features come only from the archived `_previous_day1..3` values;
@@ -146,6 +151,24 @@ Data assembled so far:
   (17 cities × 51 items), 1,810 values flagged by the quality rules and none filled;
 - 158 NDMA documents (98 sitreps, incl. 86 from monsoon 2025; 60 advisories); 1,708 sections indexed so far.
 
+## Impact analysis
+
+- **Who acts on it:** 160 district disaster-management offices and the PDMAs above them. FloodLens gives each a
+  daily, district-specific probability of rain beyond that district's own 95th percentile, 1–3 days ahead,
+  refreshed every hour.
+- **How much better than what they have:** against the district-by-month climatology that planners can already
+  read off a calendar, Model A cuts the Brier score by about 6% at 24 h on validation (0.0233 vs 0.0249; paired
+  95% interval of the difference −0.0025 to −0.0008). The gain holds in monsoon months, when it matters, and in
+  every province. Taking the raw weather-model forecast at face value is worse than climatology (0.0290),
+  so the calibration step is what makes the forecasts usable.
+- **Where it helps least:** Azad Kashmir (smallest gain). Local cloudbursts like Buner on 15 Aug 2025 are
+  smoothed out by daily satellite rain, so neither the labels nor the model can be trusted for single-valley
+  flash floods. That is stated on the dashboard.
+- **Reach at almost no cost:** the whole system runs on one CPU at an Open-Meteo free-tier budget, so a PDMA could
+  run it without new infrastructure (see the business model).
+- **Food security link:** each district is mapped to its nearest PBS market, so a planner looking at a high-risk
+  district also sees whether staple and fuel prices there are already above their 52-week range.
+
 ## Business model (X2)
 
 | | |
@@ -173,7 +196,7 @@ Data assembled so far:
 ## Data sources and licences
 
 Full list with URLs: [`backend/docs/sources.md`](backend/docs/sources.md). Binding plan:
-[`backend/DATASET_DECLARATION.md`](backend/DATASET_DECLARATION.md).
+[`DATASET_DECLARATION.md`](DATASET_DECLARATION.md).
 
 | Source | Publisher | Licence |
 | --- | --- | --- |
@@ -189,8 +212,10 @@ Full list with URLs: [`backend/docs/sources.md`](backend/docs/sources.md). Bindi
 ## Repository
 
 ```
-backend/   pipeline, models, flow, tests, docs (TASKS.md, DATASET_DECLARATION.md, AI_Use_Log.md)
+backend/   pipeline, models, flow, tests, docs (optimisation log, analysis, sources)
+space/     Hugging Face Docker Space files (alternative to the static Space)
+*.md, *.pdf at the root: TASKS, DATASET_DECLARATION, AI_Use_Log, Summary.pdf, datasetproposal.pdf
 frontend/  React dashboard (Base44 template); Live data page reads status.json
 ```
 
-AI assistance is logged in [`backend/AI_Use_Log.md`](backend/AI_Use_Log.md).
+AI assistance is logged in [`AI_Use_Log.md`](AI_Use_Log.md).

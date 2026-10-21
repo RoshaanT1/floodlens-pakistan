@@ -22,6 +22,29 @@ STEPS = [
 ]
 
 
+# Warehouse layers as files (data/raw is written by the fetchers, never edited):
+CLEAN_TABLES = ["districts", "district_attributes", "forecast_day", "forecast_live", "rain_district_day",
+                "spi_price", "spi_week_quality", "documents", "quality_log"]
+GOLD_TABLES = ["thresholds", "labels", "baseline_climatology", "features_a", "risk_live"]
+
+
+def export_layers(db_path=None) -> None:
+    """Write clean and processed (gold) tables to Parquet, atomically per file."""
+    import duckdb
+    from src.config import CLEAN, DB_PATH, GOLD
+    with duckdb.connect(str(db_path or DB_PATH), read_only=True) as con:
+        have = {t for (t,) in con.execute("SHOW TABLES").fetchall()}
+        for layer, tables in ((CLEAN, CLEAN_TABLES), (GOLD, GOLD_TABLES)):
+            layer.mkdir(parents=True, exist_ok=True)
+            for t in tables:
+                if t in have:
+                    tmp = layer / f".{t}.parquet.tmp"
+                    con.execute(f"COPY {t} TO '{tmp}' (FORMAT parquet)")
+                    tmp.replace(layer / f"{t}.parquet")
+    print(f"layers: data/clean ({len([t for t in CLEAN_TABLES if t in have])} tables), "
+          f"data/gold ({len([t for t in GOLD_TABLES if t in have])} tables) as Parquet")
+
+
 def main() -> int:
     problems = manifest.verify()
     rows = manifest.read_manifest()
@@ -40,6 +63,7 @@ def main() -> int:
         step()
         log += quality.run(tables)  # each table is checked exactly once, right after it is built
     print(quality.summary(quality.write_log(log)))
+    export_layers()
     return 0
 
 

@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { backendStatus, formatPkt } from "@/data/backend";
 import LiveMap, { METRIC_LABEL, type LiveMetric } from "@/components/live/LiveMap";
 import MarketWatch from "@/components/live/MarketWatch";
+import FreshnessQuality from "@/components/live/FreshnessQuality";
 
 const LEADS = ["1", "2", "3"] as const;
 const HORIZONS = ["24h", "48h", "72h"] as const;
@@ -82,6 +83,8 @@ export default function LiveData() {
                 )}
               </dl>
             </Panel>
+
+            <FreshnessQuality status={status} />
 
             <Panel
               title="Map"

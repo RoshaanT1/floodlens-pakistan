@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FloodLens Pakistan: dataset proposal</title>
+<style>
+  @page { size: A4; margin: 13mm 14mm; }
+  body { font: 9.4pt/1.4 "Helvetica Neue", Arial, sans-serif; color: #1a1d21; margin: 0; }
+  h1 { font-size: 16pt; margin: 0 0 2px; }
+  .sub { color: #555; margin: 0 0 8px; }
+  h2 { font-size: 11pt; margin: 12px 0 4px; border-bottom: 1px solid #ccd; padding-bottom: 2px; }
+  p, ul { margin: 0 0 5px; } ul { padding-left: 16px; } li { margin: 0 0 2px; }
+  table { border-collapse: collapse; width: 100%; font-size: 8.6pt; margin: 3px 0 6px; }
+  th, td { border: 1px solid #ccd; padding: 3px 5px; text-align: left; vertical-align: top; }
+  th { background: #f0f2f6; }
+  .small { font-size: 8.2pt; color: #555; }
+  .page { page-break-before: always; }
+</style>
+</head>
+<body>
+<h1>FloodLens Pakistan: dataset proposal</h1>
+<p class="sub">HackInsight 2026 · team Spark H · Track: climate and heat-health (disaster risk), with a secondary
+food-security model · Repo: github.com/RoshaanT1/floodlens-pakistan · Dashboard: huggingface.co/spaces/RoshaanT1/floodlens-pakistan</p>
+
+<h2>1. Problem, user and what the data must support</h2>
+<p>District and PDMA planners in Pakistan need 24–72 hours of warning, per district, before dangerous rain, to
+pre-position teams and supplies. The 2025 monsoon killed more than 1,000 people (NDMA). The data therefore has to
+give (a) what weather models forecast 1–3 days before each day, exactly as they were issued, and (b) what rain
+actually fell in each district, independently of those models, over enough years to set each district's
+own "heavy rain" threshold.</p>
+
+<h2>2. Sources used to train and evaluate the models</h2>
+<table>
+  <tr><th>Source</th><th>Publisher and why it is credible</th><th>What we use</th><th>Coverage / rows in the warehouse</th><th>Licence</th></tr>
+  <tr><td><b>Open-Meteo Previous Runs API</b> (forecasts issued 1–3 days ahead)</td>
+      <td>Open-Meteo relays the operational models of ECMWF, NOAA (GFS) and DWD, the national and European weather
+      centres. Previous Runs keeps each run as issued, so features never include later information.</td>
+      <td>Model A inputs: rain, humidity, pressure, cloud and wind at each district centre, leads 1–3 days</td>
+      <td>Feb 2024 to Oct 2026; <b>476,640</b> district-day-lead rows (<code>forecast_day</code>)</td>
+      <td>CC BY 4.0</td></tr>
+  <tr><td><b>NASA GPM IMERG V07 Late Run, daily</b> (GPM_3IMERGDL)</td>
+      <td>NASA Goddard (GES DISC); the standard multi-satellite rainfall product, used by NDMA-type agencies and
+      the research community; produced independently of the forecast models.</td>
+      <td>Labels, each district's 95th-percentile threshold (2015–2023), climatology baseline, observed-rain inputs
+      lagged ≥14 h</td>
+      <td>1 Jan 2015 to 16 Oct 2026, 4,307 days; <b>689,120</b> district-days (<code>rain_district_day</code>);
+      163,200 labelled days from 2024</td>
+      <td>NASA EOSDIS open data policy</td></tr>
+  <tr><td><b>OCHA COD-AB admin-2 boundaries</b> (via HDX)</td>
+      <td>UN OCHA Common Operational Dataset, the boundary set used across the humanitarian system in Pakistan.</td>
+      <td>160 districts; turning satellite pixels into district values</td>
+      <td>160 districts</td><td>CC BY-IGO</td></tr>
+  <tr><td><b>Pakistan Bureau of Statistics weekly SPI</b>, city-wise annex</td>
+      <td>The official statistics agency's weekly consumer prices.</td>
+      <td>Model B target and inputs (secondary model)</td>
+      <td>Jan 2023 to Oct 2026, 169 weeks, 17 cities × 51 items; <b>146,523</b> rows (<code>spi_price</code>)</td>
+      <td>Public statistics</td></tr>
+</table>
+<p class="small">Total in the processed layer: over 1.4 million rows from four independent publishers. Model A
+training rows: 247,680 (to 30 Jun 2025); validation: 88,320 (1 Jul to 31 Dec 2025); test: Jan to Sep 2026, run once.</p>
+
+<h2>3. Supporting sources (evaluation groups and citations, not model training targets)</h2>
+<table>
+  <tr><th>Source</th><th>Publisher</th><th>Use</th><th>Licence</th></tr>
+  <tr><td>2022 satellite-detected flood extent per district</td><td>UNOSAT (UNITAR), via HDX</td><td>Flood-prone group (≥10% of the district flooded); model input</td><td>CC BY-SA</td></tr>
+  <tr><td>Elevation (Copernicus DEM GLO-90)</td><td>Copernicus via the Open-Meteo Elevation API</td><td>Mountain vs plain group; model input</td><td>CC BY 4.0</td></tr>
+  <tr><td>1:10m coastline</td><td>Natural Earth</td><td>Coastal vs inland group</td><td>Public domain</td></tr>
+  <tr><td>Monsoon 2025 situation reports and advisories (157 documents)</td><td>NDMA Pakistan</td><td>Insight Agent citations; local validation of flagged districts</td><td>NDMA website terms; stored locally, not redistributed</td></tr>
+</table>
+
+<h2>4. Why these sources fit the problem</h2>
+<ul>
+  <li><b>Independence:</b> inputs come from numerical weather models, labels from satellite rainfall: different
+  publishers and methods, so the evaluation is not circular.</li>
+  <li><b>No look-ahead:</b> archived forecasts are stored as issued, and observed rain is used only from days that
+  ended ≥14 h before issue (IMERG Late latency). A test proves this (<code>tests/test_model_a.py</code>).</li>
+  <li><b>Local fit:</b> thresholds are per district, so "heavy" means unusual for that district, not a national cut-off.</li>
+  <li><b>Provenance:</b> every raw file is stored untouched with a manifest row (source, exact query or URL, UTC fetch time,
+  SHA-256, licence); <code>make data</code> refuses to build if any hash changed.</li>
+</ul>
+
+<h2 class="page">5. Splits, baselines and metrics (fixed before results)</h2>
+<table>
+  <tr><th></th><th>Model A: district heavy-rain risk</th><th>Model B: weekly food prices</th></tr>
+  <tr><td>Target</td><td>Daily wettest-pixel rain above the district's 95th percentile of wet-day (≥1 mm) rain, IMERG 2015–2023</td><td>Next week's % change in the city average price</td></tr>
+  <tr><td>Baseline</td><td>District-by-month climatology</td><td>No change</td></tr>
+  <tr><td>Metric</td><td>Brier score at 24 h (48, 72 h also), 95% bootstrap intervals</td><td>MAE of % change; 80% interval coverage</td></tr>
+  <tr><td>Splits</td><td colspan="2">Train to 30 Jun 2025 · validate 1 Jul – 31 Dec 2025 · test 1 Jan – 30 Sep 2026, run once</td></tr>
+</table>
+
+<h2>6. Data quality</h2>
+<p>A Data Quality Agent (pandera) checks schema, ranges, missing values, duplicates and timeliness for every table.
+Each failed check becomes a <b>fix, fill or flag</b> decision, logged with rule, reason, row count and time in
+<code>quality_log</code>, and replayed on rebuild. IMERG fill values (−9999.9) are never read as zero; low sample
+counts mark a day low-confidence; re-issued days keep the earlier value and are flagged. PBS prices that were not
+collected stay NULL and are never filled.</p>
+
+<h2>7. Known limits of the data</h2>
+<ul>
+  <li>Daily 0.1° satellite rain smooths out local cloudbursts: on 15 Aug 2025 IMERG's wettest Buner pixel (43 mm)
+  stayed below Buner's threshold (57.5 mm) despite a deadly flash flood.</li>
+  <li>Forecasts are taken at district centroids; the label uses the district's wettest pixel.</li>
+  <li>The Open-Meteo archive starts in Feb 2024, so Model A trains on 17 months.</li>
+  <li>PBS weeks before 30 Apr 2025 come from Internet Archive copies of PBS's old site (provenance recorded per
+  file); a few weeks have no copy.</li>
+</ul>
+
+<h2>8. Reserve sources (declared, not used)</h2>
+<p>ERA5 rainfall via Open-Meteo, only if IMERG access failed (it did not); NOAA GHCN-Daily station data for
+cross-checks; 2023 census population for reporting exposure.</p>
+</body>
+</html>
