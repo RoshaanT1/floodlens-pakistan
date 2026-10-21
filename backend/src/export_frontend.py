@@ -100,7 +100,7 @@ def risk(con) -> dict | None:
         t = json.loads(test_file.read_text())
         if t.get("model_version") == rows[0][5]:
             m, c = t["scores"]["model"]["all"]["24h"], t["scores"]["climatology"]["all"]["24h"]
-            label = (f"test-evaluated once on Jan-Sep 2026: Brier 24 h {m['brier']:.4f} vs climatology "
+            label = (f"test-evaluated once on 1 Jan-16 Oct 2026: Brier 24 h {m['brier']:.4f} vs climatology "
                      f"{c['brier']:.4f}")
     out: dict = {"model_version": rows[0][5], "label": label, "by_district": defaultdict(dict)}
     for district_id, lead, p, row_id, day, _, _ in rows:

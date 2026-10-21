@@ -4,8 +4,8 @@
 for disaster planners in Pakistan.** HackInsight 2026, team Spark H.
 
 > Status on 21 Oct 2026: pipeline, dashboard, Model A and Insight Agent are running. The live
-> dashboard shows Model A probabilities for all 160 districts every hour. The test set (Jan to
-> Sep 2026) was run once on 21 Oct with the frozen model: it beats the declared baseline.
+> dashboard shows Model A probabilities for all 160 districts every hour. The test set (1 Jan to
+> 16 Oct 2026) was run once on 21 Oct with the frozen model: it beats the declared baseline.
 
 **Deployed:** https://huggingface.co/spaces/RoshaanT1/floodlens-pakistan
 (full screen: https://roshaant1-floodlens-pakistan.static.hf.space/)
@@ -137,7 +137,7 @@ cd ../frontend && npm install && npx vite       # open /live and /ask
 
 ## Results
 
-**Test set (1 Jan to 30 Sep 2026, run once with the frozen model, 138,720 district-day-leads):**
+**Test set (1 Jan to 16 Oct 2026, run once with the frozen model, 138,720 district-day-leads):** The declared test window was 1 Jan to 30 Sep 2026; the test script had a start date but no end date, so the single run also scored 1 to 16 Oct 2026 (every labelled day at the time). Nothing was trained or tuned on those days; the numbers are reported exactly as that one run produced them.
 
 | Brier [95% CI] | 24 h | 48 h | 72 h | Monsoon months (Jun–Sep), 24 h |
 | --- | --- | --- | --- | --- |

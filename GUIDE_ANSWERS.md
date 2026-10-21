@@ -106,7 +106,7 @@ Validation (1 Jul to 31 Dec 2025), Brier at 24 h, lower is better, 95% day-block
 
 Paired difference at 24 h: −0.0016 [−0.0025, −0.0008] (the gain is larger than day-to-day noise).
 **Weakest group:** Azad Kashmir (skill +0.015); a planner there should lean on PDMA AJK advisories.
-**Test set (run once, 21 Oct, frozen model, Jan to Sep 2026):** climatology 0.0192 [0.0156, 0.0231] vs model
+**Test set (run once, 21 Oct, frozen model, 1 Jan to 16 Oct 2026; The declared test window was 1 Jan to 30 Sep 2026; the test script had a start date but no end date, so the single run also scored 1 to 16 Oct 2026 (every labelled day at the time). Nothing was trained or tuned on those days; the numbers are reported exactly as that one run produced them):** climatology 0.0192 [0.0156, 0.0231] vs model
 0.0177 [0.0146, 0.0213] at 24 h; paired difference −0.0014 [−0.0022, −0.0008]; monsoon months 0.0251 vs 0.0237.
 Source: `backend/docs/model_a_test.json`.
 
@@ -187,7 +187,7 @@ No LLM writes numbers: the wording is fixed templates, the numbers come from tab
    each; we switched to NASA's cloud OPeNDAP and cropped server-side to ~74 KB per day.
 5. **Why flag instead of fill?** A price PBS did not collect is unknown; filling it would invent data, so 1,279
    prices stay NULL and flagged.
-6. **Baseline and margin?** On the test set (Jan to Sep 2026, run once): climatology 0.0192 vs model 0.0177
+6. **Baseline and margin?** On the test set (1 Jan to 16 Oct 2026, run once): climatology 0.0192 vs model 0.0177
    Brier at 24 h, about 7% better, paired interval excludes zero, and it holds in monsoon months.
 7. **Where is the model worst?** Azad Kashmir has the smallest gain, and single-valley cloudbursts like Buner on
    15 Aug 2025 are missed by the satellite labels themselves.

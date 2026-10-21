@@ -150,7 +150,7 @@ function ResultsTable() {
   if (!t || !v) return null;
   const H = ["24h", "48h", "72h"] as const;
   const rows: [string, string, Record<(typeof H)[number], Score> | undefined][] = [
-    ["Test · Jan–Sep 2026", "Model A (gradient boosting, frozen)", t.model.all],
+    ["Test · 1 Jan–16 Oct 2026", "Model A (gradient boosting, frozen)", t.model.all],
     ["", "Climatology (declared baseline)", t.climatology.all],
     ["", "Raw forecast cut at the threshold", t.raw_forecast_cut.all],
     ["Validation · Jul–Dec 2025", "Gradient boosting (chosen)", v.models.gbm],
@@ -200,7 +200,7 @@ const REAL_FLOOD_MODEL = {
   method: [
     "For each of Pakistan's 160 districts, FloodLens predicts the probability that the day's wettest-pixel rainfall exceeds that district's own 95th percentile of wet-day rain (NASA IMERG Late, 2015–2023), for the next 24, 48 and 72 hours.",
     "Inputs are weather-model forecasts exactly as they were issued 1–3 days ahead (Open-Meteo Previous Runs: rain, humidity, pressure, cloud, wind), the district's threshold and monthly climatology, satellite rain only from days that ended at least 14 hours before the forecast was issued, and district attributes (elevation, coastline, 2022 flood exposure). Tests prove no feature uses information from after issue time.",
-    "A gradient-boosting classifier was trained on Feb 2024–Jun 2025 and its probabilities were calibrated on Jul–Dec 2025. The frozen model was scored once on the held-out test period, Jan–Sep 2026. It now runs every hour on the latest forecast.",
+    "A gradient-boosting classifier was trained on Feb 2024–Jun 2025 and its probabilities were calibrated on Jul–Dec 2025. The frozen model was scored once on the held-out test period, 1 Jan–16 Oct 2026 (the declared window ended 30 Sep; the test script had no end date, so it also scored 1–16 Oct). It now runs every hour on the latest forecast.",
   ],
   accuracy: [] as { label: string; value: string }[], // filled from status.json at render
   limits: [

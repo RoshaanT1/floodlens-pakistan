@@ -69,7 +69,7 @@ TEXT = {
         "price_move": "{item} in {city}: {sign}{pct}% this week (Rs {old} to Rs {new}, PBS week ending {day})",
         "latest_doc": "Latest NDMA document: \"{title}\" ({kind}, {day}) {url}",
         "day_line": "{day}: {mm} mm forecast · heavy-rain chance {pct} (normal for {month}: {clim})",
-        "model_line": "Test set, Jan–Sep 2026 ({n} district-days), Brier at {h}: model {m} vs climatology {c} "
+        "model_line": "Test set, 1 Jan–16 Oct 2026 ({n} district-days), Brier at {h}: model {m} vs climatology {c} "
                       "(lower is better)",
         "hello": "Hi! I'm FloodLens. I watch rain risk for Pakistan's 160 districts, weekly food prices in 17 cities "
                  "and NDMA's reports. Ask me things like \"Will it rain in Karachi?\", \"What's happening right now?\" "
@@ -96,7 +96,7 @@ TEXT = {
                          "gets {mm} mm.",
         "price_lead": "The biggest moves in this week's PBS prices: {item} in {city} {sign}{pct}%, and more below.",
         "price_one": "{item} costs Rs {pkr} on average in {city} (PBS, week ending {day}).",
-        "model_lead": "Good question. On data it never saw (Jan–Sep 2026, scored once), my heavy-rain model beats "
+        "model_lead": "Good question. On data it never saw (1 Jan–16 Oct 2026, scored once), my heavy-rain model beats "
                       "the district-by-month climatology baseline: Brier {m} vs {c} at 24 h, about {gain}% better. "
                       "It's weakest in {weak}.",
         "docs_lead": "Here's what NDMA's own reports say. I found {n} relevant passages:",
