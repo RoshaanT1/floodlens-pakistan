@@ -69,7 +69,7 @@ def fetch_live_forecast() -> str:
 def fetch_imerg() -> str:
     log = get_run_logger()
     if not imerg.has_credentials():
-        msg = "skipped: no EARTHDATA_USERNAME/EARTHDATA_PASSWORD in backend/.env"
+        msg = "skipped: no EARTHDATA_TOKEN (or username/password) in backend/.env"
         log.warning(msg)
         return msg
     try:

@@ -10,8 +10,8 @@ manifest is skipped, so the command resumes after an interruption.
 File names carry a processing version (V07B for older days, V07C for recent ones), so names
 come from the public monthly directory listing rather than being built by hand.
 
-Downloads need a NASA Earthdata login with GES DISC authorised, read from .env
-(EARTHDATA_USERNAME, EARTHDATA_PASSWORD).
+Downloads need a NASA Earthdata login with GES DISC authorised, read from .env:
+EARTHDATA_TOKEN (preferred), or EARTHDATA_USERNAME + EARTHDATA_PASSWORD.
 """
 import argparse
 import io
@@ -64,16 +64,22 @@ class EarthdataSession(requests.Session):
 
 def has_credentials() -> bool:
     load_dotenv(ROOT / ".env")
-    return bool(os.getenv("EARTHDATA_USERNAME") and os.getenv("EARTHDATA_PASSWORD"))
+    return bool(os.getenv("EARTHDATA_TOKEN")
+                or (os.getenv("EARTHDATA_USERNAME") and os.getenv("EARTHDATA_PASSWORD")))
 
 
 def session() -> EarthdataSession:
+    """Earthdata token (preferred: revocable, expires) or username + password, from .env."""
     load_dotenv(ROOT / ".env")
-    user, pw = os.getenv("EARTHDATA_USERNAME"), os.getenv("EARTHDATA_PASSWORD")
-    if not user or not pw:
-        raise SystemExit("set EARTHDATA_USERNAME and EARTHDATA_PASSWORD in .env (see .env.example)")
     s = EarthdataSession()
-    s.auth = (user, pw)
+    token = (os.getenv("EARTHDATA_TOKEN") or "").strip()
+    user, pw = os.getenv("EARTHDATA_USERNAME"), os.getenv("EARTHDATA_PASSWORD")
+    if token:
+        s.headers["Authorization"] = f"Bearer {token}"
+    elif user and pw:
+        s.auth = (user, pw)
+    else:
+        raise SystemExit("set EARTHDATA_TOKEN (or EARTHDATA_USERNAME and EARTHDATA_PASSWORD) in .env")
     return s
 
 
