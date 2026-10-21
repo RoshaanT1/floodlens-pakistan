@@ -1,0 +1,17 @@
+# Serves flows/hourly.py on its 5 * * * * schedule. Holds a sleep/idle inhibitor while
+# running so the laptop does not suspend mid-window (lid close still suspends).
+[Unit]
+Description=FloodLens hourly flow (Prefect serve)
+After=floodlens-prefect.service
+Requires=floodlens-prefect.service
+
+[Service]
+WorkingDirectory=/home/roshaan/Desktop/Project/Competition/hackInsight/backend
+Environment=PREFECT_API_URL=http://127.0.0.1:4200/api
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do curl -sf http://127.0.0.1:4200/api/health >/dev/null && exit 0; sleep 2; done; exit 1'
+ExecStart=/usr/bin/systemd-inhibit --what=sleep:idle --who=FloodLens --why="hourly flow (HackInsight run window)" --mode=block /home/roshaan/Desktop/Project/Competition/hackInsight/backend/.venv/bin/python -m flows.hourly serve
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target
