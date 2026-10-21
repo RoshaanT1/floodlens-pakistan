@@ -122,6 +122,16 @@ Data assembled so far:
   (17 cities × 51 items), 1,810 values flagged by the quality rules and none filled;
 - 158 NDMA documents (98 sitreps, incl. 86 from monsoon 2025; 60 advisories); 1,708 sections indexed so far.
 
+## Business model (X2)
+
+| | |
+| --- | --- |
+| **User** | District disaster-management officers and PDMA planners; NGOs that pre-position relief (e.g. WFP, IRC, Alkhidmat). |
+| **Payer** | PDMAs and NDMA through provincial disaster-preparedness budgets, or humanitarian donors funding anticipatory action (pre-agreed money released when a forecast trigger is hit). The district map and Insight Agent stay free for the public. |
+| **Value** | One to three days of district-level notice of rain beyond the district's own norm, with the evidence (forecast vs threshold, official sources) in one place; anticipatory-action triggers need exactly this kind of auditable, pre-agreed signal. |
+| **Running costs measured during the event** | Compute: one hourly run is ~28 min of rate-limited downloading plus ~1 min of rebuild on a laptop CPU, peak ~770 MB RAM. Storage: ~1.3 GB of raw data, growing ~10 MB a day. Data: NASA IMERG and OCHA, UNOSAT and PBS data are free; Open-Meteo is free for non-commercial use (<10,000 calls a day), and a paid plan is needed for commercial use (price to confirm with Open-Meteo). Hosting: a free-tier VM (Oracle Always Free) or ~€4/month (Hetzner CX22) is enough. |
+| **Risks** | Upstream availability (NASA endpoints blocked this machine for hours on 21 Oct; the flow kept running and logged it); forecast skill limits in hill-torrent catchments; users mistaking a rain signal for an official flood warning (mitigated by labelling and by pointing to NDMA/PDMA); free-tier terms changing. |
+
 ## Limits
 
 - Model A forecasts heavy rain, not floods, damage or deaths.
