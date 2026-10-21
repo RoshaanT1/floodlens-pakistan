@@ -67,7 +67,20 @@ See the "Flow log" at the end for the run-by-run record.
   At ~530 calls a month, the remaining Mar 2025 to Oct 2026 (~10.6k calls) should finish
   around 09:30 PKT on Wednesday. Validation (to Dec 2025) is covered by about 07:00 PKT.
 
+### Laptop sleep (21 Oct, 04:33 to 06:10 PKT)
+
+The laptop went into idle hybrid sleep at 04:33 (journalctl) and woke at about 06:10, so the
+05:05 slot started late at 06:10 and 06:05 queued behind it. Since 06:30 a block-mode
+idle/sleep inhibitor ("FloodLens") is held (`systemd-inhibit --list`). Closing the lid
+still suspends. The flow moves to systemd user units (`deploy/systemd/`, see
+`deploy/README.md`) at the first gap between runs: they restart on failure and hold the
+inhibitor themselves. After that switch, stop the stand-alone inhibitor with
+`systemctl --user stop floodlens-inhibit`.
+
 ### Start and stop
+
+Preferred, once installed: `systemctl --user start|stop floodlens-prefect floodlens-flow`.
+Manual equivalent:
 
 ```bash
 cd backend
