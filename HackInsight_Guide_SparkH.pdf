@@ -10615,7 +10615,7 @@ ET
 0.05 0.15 0.45 rg
 BT
 1 0 0 1 57.1 148.97 Tm
-(Forecasts 476\054640 district\055day\055lead rows\073 IMERG 689\054120 district\055days \0502015 to Oct 2026\051\073 PBS prices 146\054523 rows \050169 weeks\051\056) Tj
+(Forecasts 476\054640 district\055day\055lead rows\073 IMERG 689\054280 district\055days \0502015 to Oct 2026\051\073 PBS prices 146\054523 rows \050169 weeks\051\056) Tj
 T*
 ET
 BT
@@ -10721,7 +10721,7 @@ endobj
 endobj
 41 0 obj
 <<
-/Length 126310
+/Length 126203
 >>
 stream
 q
@@ -14162,18 +14162,13 @@ BT
 ET
 0.05 0.15 0.45 rg
 BT
-1 0 0 1 57.8 366.11 Tm
+1 0 0 1 57.8 362.19 Tm
 (spi\137price \174 rule spi\137price\137collected \174 action FLAG \174 1\054279 rows \174 reason\072 PBS published 0 or nothing for this city and item \050not collected\051\073 kept NULL\054 never filled \174) Tj
 T*
 ET
 BT
-1 0 0 1 57.8 358.27 Tm
-(decided 2026\05510\05521\054 replayed on every rebuild\056 Others\072 spi\137min\137le\137avg\137le\137max FLAG 822 rows\073 spi\137weekly\137jump FLAG 399 rows\073 rain\137district\137day\137timely) Tj
-T*
-ET
-BT
-1 0 0 1 57.8 350.43 Tm
-(FLAG \050stale since 16 Oct\051\056) Tj
+1 0 0 1 57.8 354.35 Tm
+(decided 2026\05510\05521\054 replayed on every rebuild\056 Others\072 spi\137min\137le\137avg\137le\137max FLAG 822 rows\073 spi\137weekly\137jump FLAG 399 rows\056) Tj
 T*
 ET
 BT
@@ -14240,7 +14235,7 @@ endobj
 endobj
 45 0 obj
 <<
-/Length 111394
+/Length 111393
 >>
 stream
 q
@@ -16928,7 +16923,7 @@ ET
 0.05 0.15 0.45 rg
 BT
 1 0 0 1 57.1 498.07 Tm
-(Logistic regression \055\076 gradient boosting \050both calibrated on validation\051\072 val Brier 24 h 0\0560238 \055\076 0\0560233\073 training 2\0569 s \055\076 3\0564 s\073 \176600 MB peak both\056 Kept\056) Tj
+(Logistic regression \055\076 gradient boosting \050both calibrated on validation\051\072 val Brier 24 h 0\0560238 \055\076 0\0560233\073 training 2\0563 s \055\076 3\0564 s\073 \176600 MB peak both\056 Kept\056) Tj
 T*
 ET
 BT
@@ -16968,7 +16963,7 @@ ET
 0.05 0.15 0.45 rg
 BT
 1 0 0 1 57.1 403.64 Tm
-(Gradient boosting gained 0\0560005 Brier over logistic regression for 0\0565 s more training and a less transparent model\073 kept because it also gained in monsoon) Tj
+(Gradient boosting gained 0\0560005 Brier over logistic regression for \1761 s more training and a less transparent model\073 kept because it also gained in monsoon) Tj
 T*
 ET
 BT
@@ -23116,32 +23111,32 @@ xref
 0000591001 00000 n 
 0000591085 00000 n 
 0000591355 00000 n 
-0000717720 00000 n 
-0000717828 00000 n 
-0000717912 00000 n 
-0000718193 00000 n 
+0000717613 00000 n 
+0000717721 00000 n 
+0000717805 00000 n 
+0000718086 00000 n 
+0000829534 00000 n 
 0000829642 00000 n 
-0000829750 00000 n 
-0000829834 00000 n 
-0000830312 00000 n 
-0000830339 00000 n 
-0000830363 00000 n 
-0000830401 00000 n 
-0000867275 00000 n 
-0000867295 00000 n 
-0000867343 00000 n 
-0000867761 00000 n 
-0000868031 00000 n 
+0000829726 00000 n 
+0000830204 00000 n 
+0000830231 00000 n 
+0000830255 00000 n 
+0000830293 00000 n 
+0000867167 00000 n 
+0000867187 00000 n 
+0000867235 00000 n 
+0000867653 00000 n 
+0000867923 00000 n 
+0000956457 00000 n 
 0000956565 00000 n 
-0000956673 00000 n 
-0000956757 00000 n 
-0000957038 00000 n 
+0000956649 00000 n 
+0000956930 00000 n 
+0001063300 00000 n 
 0001063408 00000 n 
-0001063516 00000 n 
-0001063600 00000 n 
-0001063870 00000 n 
+0001063492 00000 n 
+0001063762 00000 n 
+0001112117 00000 n 
 0001112225 00000 n 
-0001112333 00000 n 
 trailer
 <<
 /Size 68
@@ -23149,5 +23144,5 @@ trailer
 /Info 1 0 R
 >>
 startxref
-1112417
+1112309
 %%EOF

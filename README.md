@@ -12,7 +12,7 @@ for disaster planners in Pakistan.** HackInsight 2026, team Spark H.
 | | |
 | --- | --- |
 | Live dashboard (Hugging Face Space, no login) | https://huggingface.co/spaces/RoshaanT1/floodlens-pakistan |
-| Demo video (2:55, no login) | https://roshaant1-floodlens-pakistan.static.hf.space/demo.mp4 |
+| Demo video (2:52, no login) | https://roshaant1-floodlens-pakistan.static.hf.space/demo.mp4 |
 | One-page summary | [`Summary.pdf`](Summary.pdf) |
 | Dataset proposal | [`datasetproposal.pdf`](datasetproposal.pdf) |
 | Run history, Tue 16:00 to Wed 16:00 PKT (unedited) | [`backend/docs/prefect_runs.csv`](backend/docs/prefect_runs.csv) + [`backend/docs/screenshots/`](backend/docs/screenshots/) |
@@ -172,10 +172,10 @@ saw it. Sources: `backend/docs/model_a_validation.json`, `backend/docs/model_a_a
 
 Data assembled so far:
 - 160 districts (OCHA admin-2), with elevation, coastal and 2022 flood-prone attributes;
-- archived forecasts from Jul 2024 onward, backfilled within the 10,000 calls/day free tier;
+- archived forecasts from Feb 2024 onward, backfilled within the 10,000 calls/day free tier;
 - PBS weekly prices for **169 weeks** (5 Jan 2023 to 15 Oct 2026), every week complete
   (17 cities × 51 items), 1,810 values flagged by the quality rules and none filled;
-- 158 NDMA documents (98 sitreps, incl. 86 from monsoon 2025; 60 advisories); 1,708 sections indexed so far.
+- 157 NDMA documents (98 sitreps, incl. 86 from monsoon 2025; 59 advisories); 1,708 sections indexed so far.
 
 ## Impact analysis
 

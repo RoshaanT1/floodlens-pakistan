@@ -56,8 +56,8 @@ Use this as the viva script: each member should be able to say every answer in t
   NASA EOSDIS open data policy, daily (~14 h latency).
 - **Not on the track list and why credible:** NASA IMERG, NASA's standard multi-satellite rainfall product,
   independent of the weather models we use as inputs. (Also PBS weekly SPI, Pakistan's official weekly prices.)
-- **Expected / actual volume:** forecasts 476,640 district-day-lead rows; satellite rain 689,120 district-days
-  (2015-01-01 to 2026-10-16); PBS prices 146,523 rows (169 weeks).
+- **Expected / actual volume:** forecasts 476,640 district-day-lead rows; satellite rain 689,280 district-days
+  (2015-01-01 to 2026-10-20); PBS prices 146,523 rows (169 weeks).
 - **Why it fits:** archived forecasts give real lead time without leaking the future; satellite rain shows what fell
   even where there is no gauge; both cover every district.
 - **Baseline declared before results:** district-by-month climatology (Model A); no change (Model B).
@@ -88,8 +88,7 @@ Use this as the viva script: each member should be able to say every answer in t
 > collected); kept NULL, never filled. Decided 2026-10-21, replayed on every rebuild.
 
 Other logged decisions: `spi_min_le_avg_le_max` (flag, 822 rows, kept as PBS printed it), `spi_weekly_jump`
-(flag, 399 rows, possible typo, not corrected), `rain_district_day_timely` (flag: newest satellite day 16 Oct,
-shown as stale on the dashboard). IMERG fill pixels, low sample counts and NASA re-issues also have rules.
+(flag, 399 rows, possible typo, not corrected). IMERG fill pixels, low sample counts and NASA re-issues also have rules.
 
 **Why flag instead of fill:** a price PBS did not collect is unknown, not zero, and not "last week's price".
 Filling it would invent a number that Model B would then learn from. A flag keeps the gap visible.
@@ -116,14 +115,14 @@ Source: `backend/docs/model_a_test.json`.
 ## Ch. 8: Optimization log (full log: `backend/docs/optimisation_log.md`)
 
 1. **Logistic regression → gradient boosting** (both calibrated on validation): val Brier 24 h 0.0238 → 0.0233;
-   training 2.9 s → 3.4 s; ~600 MB peak both. Kept.
+   training 2.3 s → 3.4 s; ~600 MB peak both. Kept.
 2. **IMERG server-side crop** instead of global daily files: 33.3 MB → ~74 KB per day; 4,307 days = 182 MB instead
    of ~143 GB. Same values (checked on 14 Aug 2025). Kept.
 3. **Cache parsed PBS PDFs by SHA-256:** price build 286 s → 3.6 s on rebuild; identical tables. Kept.
 - Also: hourly build into a scratch database swapped in only on success (+~1 s, a failed run cannot corrupt data);
   Model B quantile GBM rejected (MAE 1.667 vs 1.665 for "no change").
 
-**Trade-off:** gradient boosting gained 0.0005 Brier over logistic regression for half a second more training and
+**Trade-off:** gradient boosting gained 0.0005 Brier over logistic regression for about a second more training and
 a model that is harder to explain; we kept it because it also gained in monsoon months and in every group.
 
 ---
@@ -217,7 +216,7 @@ must fill in the "what we verified" and "who can explain" columns for their rows
 | `prefect_runs.csv` (Tue 4 PM to Wed 4 PM, unedited) + screenshot | ✓ `backend/docs/prefect_runs.csv` (15 runs: 14 completed, 1 failed), `backend/docs/screenshots/` |
 | `Summary.pdf` (one page) | ✓ repo root |
 | `datasetproposal.pdf` | ✓ repo root |
-| Demo video (≤3 min, no login) | ✓ https://roshaant1-floodlens-pakistan.static.hf.space/demo.mp4 (2:55, captioned, silent) |
+| Demo video (≤3 min, no login) | ✓ https://roshaant1-floodlens-pakistan.static.hf.space/demo.mp4 (2:52, captioned, silent) |
 | `AI_Use_Log.md` honest and complete | ✓ every row has what we verified and who can explain it |
 | `make data` rebuilds the cleaned and processed layers | ✓ (raw layer via `make fetch`; see ch. 5) |
 | Manifest complete | ✓ |
