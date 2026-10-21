@@ -17,6 +17,7 @@ import argparse
 import io
 import os
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta, timezone
 
@@ -85,7 +86,15 @@ def session() -> EarthdataSession:
 
 def list_month(s: requests.Session, year: int, month: int) -> dict[date, str]:
     """{day: filename} for one month, from the public directory listing."""
-    r = s.get(f"{DATA_URL}/{year}/{month:02d}/", timeout=120)
+    for attempt in range(1, 6):  # the listing host drops the odd TLS handshake
+        try:
+            r = s.get(f"{DATA_URL}/{year}/{month:02d}/", timeout=120)
+            break
+        except requests.RequestException as e:
+            print(f"  listing {year}-{month:02d} attempt {attempt} failed: {e.__class__.__name__}")
+            if attempt == 5:
+                raise
+            time.sleep(10 * attempt)
     if r.status_code == 404:
         return {}
     r.raise_for_status()
